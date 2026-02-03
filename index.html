@@ -68,7 +68,7 @@
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
+        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장/공유</button>
     </div>
 </div>
 
@@ -234,45 +234,50 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    // 수정된 이미지 저장 로직: 모바일 호환성 강화
-    function saveAsImage() {
+    // APK 환경 최적화 저장/공유 함수
+    async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
         
-        html2canvas(captureArea, { 
-            backgroundColor: "#f2f4f7", 
-            scale: 2,
-            useCORS: true
-        }).then(canvas => {
+        try {
+            const canvas = await html2canvas(captureArea, { 
+                backgroundColor: "#f2f4f7", 
+                scale: 2,
+                useCORS: true
+            });
+
             const imageData = canvas.toDataURL("image/png");
             
-            // 기존 다운로드 시도 (PC 환경용)
-            const link = document.createElement('a');
-            link.download = `정산리포트_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = imageData;
-            link.click();
+            // APK 환경에서 파일 객체 생성
+            const response = await fetch(imageData);
+            const blob = await response.blob();
+            const file = new File([blob], `settlement_${new Date().getTime()}.png`, { type: 'image/png' });
 
-            // 모바일/인앱 브라우저를 위한 알림 및 하단 이미지 노출
-            alert("다운로드가 시작되지 않는 경우, 리포트 아래에 생성된 이미지를 '길게 눌러서' 저장해 주세요.");
-            
-            // 기존에 생성된 이미지가 있다면 제거
-            const existingImg = document.getElementById('tempResultImg');
-            if (existingImg) existingImg.remove();
+            // 1. 공유 기능 시도 (안드로이드 시스템 팝업 호출)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: '팀 정산 리포트',
+                });
+            } else {
+                // 2. 공유 기능 미지원 시 (WebView 설정에 따라 다름)
+                // 하단에 이미지를 띄워 사용자가 꾹 눌러 저장하게 함
+                alert("공유하기를 사용할 수 없습니다. 생성된 이미지를 '꾹 눌러서' 저장해 주세요.");
+                
+                const existingImg = document.getElementById('tempResultImg');
+                if (existingImg) existingImg.remove();
 
-            // 이미지 요소 추가
-            const img = new Image();
-            img.id = 'tempResultImg';
-            img.src = imageData;
-            img.style.width = "100%";
-            img.style.marginTop = "20px";
-            img.style.borderRadius = "12px";
-            img.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-            img.style.border = "2px solid var(--primary)";
-            
-            document.getElementById('actionButtons').appendChild(img);
-            
-            // 이미지로 자동 스크롤
-            img.scrollIntoView({ behavior: 'smooth' });
-        });
+                const img = new Image();
+                img.id = 'tempResultImg';
+                img.src = imageData;
+                img.style.cssText = "width:100%; margin-top:20px; border-radius:12px; border:2px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.2);";
+                
+                document.getElementById('actionButtons').appendChild(img);
+                img.scrollIntoView({ behavior: 'smooth' });
+            }
+        } catch (e) {
+            console.error(e);
+            alert("리포트 이미지 생성에 실패했습니다. 화면 캡처 기능을 이용해 주세요.");
+        }
     }
 </script>
 </body>
