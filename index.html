@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>팀 정산 어플 (Master)</title>
+    <title>팀 정산 어플 (Final Fix)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v26] Truncation Options Added */
+        /* [Update: 2026-02-04-v27] Logic Fix for Multiple Receivers in STEP 2 */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -100,7 +100,7 @@
         .step-badge { font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; display: inline-block; }
         .step-badge.send { background: rgba(255, 77, 79, 0.2); color: #ff6b6b; }
         .step-badge.keep { background: rgba(40, 167, 69, 0.2); color: #5dd579; }
-        .settle-text { font-size: 0.9rem; font-weight: 500; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .settle-text { font-size: 0.9rem; font-weight: 500; color: #fff; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         
         .status-table { width: 100%; font-size: 0.75rem; margin-bottom: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; color: #ccc; }
         .status-row { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px dashed #555; padding-bottom: 4px; }
@@ -142,28 +142,23 @@
 <div id="settingsModal" class="modal-overlay">
     <div class="modal-card">
         <h3 class="modal-title">⚙️ 설정 관리</h3>
-        
         <div class="setting-section">
             <span class="setting-label">👥 전체 팀 관리</span>
             <div style="font-size:0.75rem; color:#888; margin-bottom:8px;">* 참여하는 모든 팀을 입력하세요. <br>* '내부 정산'은 우리 팀 하나만 선택하세요.</div>
             <div id="teamSettingList"></div>
             <button class="add-small-btn" onclick="addTeamInput()">+ 팀 추가하기</button>
         </div>
-
         <div class="setting-section">
             <span class="setting-label">👤 우리 팀원 관리 (내부 정산용)</span>
             <div style="font-size:0.75rem; color:#888; margin-bottom:8px;">* 우리 팀원 이름을 입력하세요. (개별 결제자)</div>
             <div id="memberSettingList"></div>
             <button class="add-small-btn" onclick="addMemberInput()">+ 팀원 추가하기</button>
         </div>
-
         <div class="setting-section">
             <span class="setting-label">💰 정산 단위 (절사 설정)</span>
             <div style="font-size:0.75rem; color:#888; margin-bottom:8px;">* 최종 보낼 금액에서 자투리 돈을 버림합니다.</div>
-            <div class="radio-wrapper" id="truncOptions">
-                </div>
+            <div class="radio-wrapper" id="truncOptions"></div>
         </div>
-        
         <button class="modal-close-btn" onclick="saveSettings()">저장하고 닫기</button>
         <button class="reset-all-btn" onclick="factoryReset()">🔴 모든 데이터 및 설정 초기화</button>
     </div>
@@ -177,7 +172,7 @@
             { id: 'teamC', name: "C팀(지훈,은혜)", isMyTeam: true }
         ],
         members: ["지훈", "은혜"],
-        truncationUnit: 1 // 기본값: 1원 단위 (절사 없음)
+        truncationUnit: 1
     };
 
     let appConfig = JSON.parse(localStorage.getItem('appConfig')) || defaultConfig;
@@ -187,7 +182,6 @@
     function openSettings() { renderSettingsUI(); document.getElementById('settingsModal').style.display = 'flex'; }
     
     function renderSettingsUI() {
-        // 1. 팀 리스트 렌더링
         const teamList = document.getElementById('teamSettingList');
         teamList.innerHTML = '';
         appConfig.teams.forEach((team, idx) => {
@@ -203,7 +197,6 @@
             teamList.appendChild(div);
         });
 
-        // 2. 멤버 리스트 렌더링
         const memberList = document.getElementById('memberSettingList');
         memberList.innerHTML = '';
         appConfig.members.forEach((mem, idx) => {
@@ -216,7 +209,6 @@
             memberList.appendChild(div);
         });
 
-        // 3. 정산 단위 라디오 버튼 렌더링
         const truncList = document.getElementById('truncOptions');
         const units = [1, 10, 100];
         const labels = ["1원 (정확하게)", "10원 단위 버림", "100원 단위 버림"];
@@ -228,49 +220,25 @@
         `).join('');
     }
 
-    // --- 설정 관련 함수들 ---
     function addTeamInput() { appConfig.teams.push({ id: `team${Date.now()}`, name: "새로운팀", isMyTeam: false }); renderSettingsUI(); }
     function removeTeam(idx) { if(confirm('이 팀을 삭제하시겠습니까?')) { appConfig.teams.splice(idx, 1); if(!appConfig.teams.some(t=>t.isMyTeam) && appConfig.teams.length > 0) appConfig.teams[0].isMyTeam = true; renderSettingsUI(); } }
     function updateMyTeam(idx) { appConfig.teams.forEach((t, i) => t.isMyTeam = (i === idx)); }
     function addMemberInput() { appConfig.members.push("새팀원"); renderSettingsUI(); }
     function removeMember(idx) { appConfig.members.splice(idx, 1); renderSettingsUI(); }
-    
-    function saveSettings() { 
-        localStorage.setItem('appConfig', JSON.stringify(appConfig)); 
-        document.getElementById('settingsModal').style.display = 'none'; 
-        saveToLocal(); 
-        location.reload(); 
-    }
+    function saveSettings() { localStorage.setItem('appConfig', JSON.stringify(appConfig)); document.getElementById('settingsModal').style.display = 'none'; saveToLocal(); location.reload(); }
+    function factoryReset() { if(confirm("정말 초기화하시겠습니까?\n모든 정산 내역과 팀 설정이 삭제됩니다.")) { localStorage.clear(); location.reload(); } }
 
-    function factoryReset() {
-        if(confirm("정말 초기화하시겠습니까?\n모든 정산 내역과 팀 설정이 삭제됩니다.")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    // --- 리스트 및 UI 로직 ---
     function loadData() {
         const savedData = localStorage.getItem('settlementData');
         const list = document.getElementById('itemList');
         list.innerHTML = ""; 
-
-        if (savedData && JSON.parse(savedData).length > 0) {
-            JSON.parse(savedData).forEach((item) => renderItem(item));
-        } else {
-            list.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📝</div>
-                    <div>아직 내역이 없습니다.<br>아래 버튼을 눌러 추가해주세요.</div>
-                </div>
-            `;
-        }
+        if (savedData && JSON.parse(savedData).length > 0) { JSON.parse(savedData).forEach((item) => renderItem(item)); } 
+        else { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><div>아직 내역이 없습니다.<br>아래 버튼을 눌러 추가해주세요.</div></div>`; }
     }
 
     function renderItem(data = null) {
         const list = document.getElementById('itemList');
         if (list.querySelector('.empty-state')) list.innerHTML = "";
-
         const tempId = Date.now() + Math.random();
         const div = document.createElement('div');
         div.className = `item-group ${data?.collapsed ? 'collapsed' : ''}`;
@@ -281,7 +249,6 @@
         
         let payerOptionsHtml = otherTeams.map(t => `<label class="radio-item"><input type="radio" name="payer_${tempId}" value="${t.name}" ${data?.payer === t.name ? 'checked' : ''} onchange="updateHeader(this)">${t.name}</label>`).join('');
         payerOptionsHtml += appConfig.members.map(m => `<label class="radio-item"><input type="radio" name="payer_${tempId}" value="${m}" ${data?.payer === m ? 'checked' : ''} onchange="updateHeader(this)">${m}</label>`).join('');
-
         const teamCheckHtml = appConfig.teams.map(t => `<label class="check-item"><input type="checkbox" class="team-check" value="${t.id}" data-name="${t.name}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}</label>`).join('');
 
         div.innerHTML = `
@@ -319,31 +286,12 @@
         saveToLocal();
     }
 
-    function formatAmount(obj) {
-        let value = obj.value.replace(/[^0-9]/g, "");
-        obj.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    }
-
+    function formatAmount(obj) { let value = obj.value.replace(/[^0-9]/g, ""); obj.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
     function addNewItem() { renderItem(); }
-
-    function clearAllItems() {
-        if(confirm("모든 정산 내역을 지우시겠습니까?\n(설정된 팀 정보는 유지됩니다)")) {
-            localStorage.removeItem('settlementData');
-            document.getElementById('result').style.display = 'none';
-            document.getElementById('actionButtons').style.display = 'none';
-            loadData(); 
-        }
-    }
-
+    function clearAllItems() { if(confirm("모든 정산 내역을 지우시겠습니까?\n(설정된 팀 정보는 유지됩니다)")) { localStorage.removeItem('settlementData'); document.getElementById('result').style.display = 'none'; document.getElementById('actionButtons').style.display = 'none'; loadData(); } }
     function saveAndCollapse(btn) { btn.closest('.item-group').classList.add('collapsed'); saveToLocal(); }
     function toggleItem(header) { header.closest('.item-group').classList.toggle('collapsed'); }
-    function removeItem(btn) { 
-        if(confirm("삭제하시겠습니까?")) { 
-            btn.closest('.item-group').remove(); 
-            saveToLocal(); 
-            if(document.querySelectorAll('.item-group').length === 0) loadData();
-        } 
-    }
+    function removeItem(btn) { if(confirm("삭제하시겠습니까?")) { btn.closest('.item-group').remove(); saveToLocal(); if(document.querySelectorAll('.item-group').length === 0) loadData(); } }
     
     function saveToLocal() {
         const items = [];
@@ -362,7 +310,6 @@
         localStorage.setItem('settlementData', JSON.stringify(items));
     }
 
-    // [핵심] 절사 함수
     function applyTruncate(amount) {
         const unit = appConfig.truncationUnit || 1;
         return Math.floor(amount / unit) * unit;
@@ -413,10 +360,9 @@
             diffs.filter(c => c.balance > 1).forEach(creditor => {
                 if (debt <= 0 || creditor.balance <= 0) return;
                 let amount = Math.min(debt, creditor.balance);
-                // [적용] 송금액 절사
                 let finalAmount = applyTruncate(amount);
                 msg += `<div class="guide-container"><span class="guide-team">💰 ${debtor.name} → ${creditor.name}</span><div class="guide-detail"><span class="send-label">보내야 할 돈</span><span class="highlight">${finalAmount.toLocaleString()}원</span></div></div>`;
-                debt -= amount; creditor.balance -= amount; // 계산은 정확히, 표시는 절사해서 보여줌
+                debt -= amount; creditor.balance -= amount;
             });
         });
 
@@ -438,19 +384,19 @@
             const colorClass = diff >= 0 ? 'text-green' : 'text-red';
             statusHtml += `<div class="status-row"><span>${m}</span><span class="${colorClass}">${diffText}</span></div>`;
 
-            if (diff < -1) givers.push({name: m, amount: Math.abs(diff)});
-            else if (diff > 1) receivers.push({name: m, amount: diff});
+            if (diff < -1) givers.push({name: m, amount: Math.abs(diff)}); // 돈을 덜 낸 사람 (줘야 함)
+            else if (diff > 1) receivers.push({name: m, amount: diff}); // 돈을 더 낸 사람 (받아야 함)
         });
 
         let step1Html = "";
         if (givers.length === 0 && receivers.length === 0) {
             step1Html = `<div style="font-size:0.85rem; color:#aaa;">주고받을 돈이 없습니다.</div>`;
         } else {
+            // Greedy Algorithm for Step 1
             givers.forEach(g => {
                 receivers.forEach(r => {
                     if (g.amount <= 0 || r.amount <= 0) return;
                     const trade = Math.min(g.amount, r.amount);
-                    // [적용] 내부 송금액 절사
                     let finalTrade = applyTruncate(trade);
                     step1Html += `<div class="settle-card send">
                                     <span class="step-badge send">STEP 1</span>
@@ -463,20 +409,30 @@
 
         let step2Html = "";
         if (Math.abs(netFlowC) > 10) {
-            const representative = Object.keys(memberPaid).reduce((a, b) => memberPaid[a] > memberPaid[b] ? a : b);
-            // [적용] 외부 송금/수금액 절사
-            let finalNetFlow = applyTruncate(Math.abs(netFlowC));
-            
+            // [수정된 로직] 외부 자금(netFlowC)을 개인별 할당량에 따라 분배
             if (netFlowC > 0) {
-                step2Html = `<div class="settle-card keep">
-                                <span class="step-badge keep">STEP 2</span>
-                                <div class="settle-text">${representative}이(가) 외부에서 들어온 <span class="highlight">${finalNetFlow.toLocaleString()}원</span>을 가집니다.</div>
-                             </div>`;
+                // 외부에서 돈이 들어옴 -> 'receivers' (더 낸 사람들)에게 분배
+                receivers.forEach(r => {
+                    if (r.amount > 10) { // 받을 돈이 남아있는 사람만
+                        let take = applyTruncate(r.amount);
+                        step2Html += `<div class="settle-card keep">
+                                        <span class="step-badge keep">STEP 2</span>
+                                        <div class="settle-text">${r.name}(이)가 외부 자금 중 <span class="highlight">${take.toLocaleString()}원</span>을 가집니다.</div>
+                                      </div>`;
+                    }
+                });
             } else {
-                step2Html = `<div class="settle-card send">
-                                <span class="step-badge send">STEP 2</span>
-                                <div class="settle-text">${representative}이(가) 외부에 <span class="highlight">${finalNetFlow.toLocaleString()}원</span>을 보냅니다.</div>
-                             </div>`;
+                // 외부로 돈을 보내야 함 -> 'givers' (덜 낸 사람들)에게서 징수
+                let totalToSend = Math.abs(netFlowC);
+                givers.forEach(g => {
+                    if (g.amount > 10) {
+                        let give = applyTruncate(g.amount);
+                        step2Html += `<div class="settle-card send">
+                                        <span class="step-badge send">STEP 2</span>
+                                        <div class="settle-text">${g.name}(이)가 외부에 <span class="highlight">${give.toLocaleString()}원</span>을 보냅니다.</div>
+                                      </div>`;
+                    }
+                });
             }
         } else {
              step2Html = `<div style="font-size:0.8rem; color:#aaa; margin-top:5px;">* 외부와 주고받을 돈이 없습니다.</div>`;
