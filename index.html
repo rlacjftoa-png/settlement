@@ -46,10 +46,12 @@
         .guide-detail { font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 8px; }
         .send-label { font-size: 0.7rem; color: #ccc; background: #444; padding: 3px 8px; border-radius: 5px; }
 
-        /* 팝업 오버레이 스타일 */
-        #imagePopup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
-        #imagePopup img { max-width: 90%; max-height: 80%; border-radius: 8px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
-        #imagePopup .close-pop { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
+        /* 이미지 오버레이 팝업 */
+        #imagePopup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+        #imagePopup img { max-width: 95%; max-height: 75%; border: 1px solid #444; }
+        .pop-instr { color: #fff; text-align: center; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.4; }
+        .pop-btns { display: flex; gap: 10px; width: 90%; margin-top: 20px; }
+        .pop-btns button { flex: 1; }
     </style>
 </head>
 <body>
@@ -73,15 +75,21 @@
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 생성</button>
+        <button class="image-btn" onclick="generateReportImage()">🖼️ 리포트 이미지 생성</button>
     </div>
 </div>
 
 <div id="imagePopup">
-    <span class="close-pop" onclick="this.parentElement.style.display='none'">&times;</span>
-    <p style="color:white; font-size:0.9rem; margin-bottom:15px;">이미지를 길게 눌러 저장하거나 화면을 캡처하세요.</p>
-    <img id="popImg" src="" alt="정산 리포트">
-    <button onclick="document.getElementById('imagePopup').style.display='none'" style="margin-top:20px; width:auto; padding:10px 30px; background:#444; color:white;">닫기</button>
+    <div class="pop-instr">
+        📍 <b>이미지 생성 완료</b> 📍<br>
+        현재 앱 설정으로 자동 저장이 막혀있습니다.<br>
+        <b>이 화면을 그대로 '캡처'해서 공유해 주세요!</b>
+    </div>
+    <img id="popImg" src="" alt="정산리포트">
+    <div class="pop-btns">
+        <button onclick="shareImage()" style="background:var(--primary); color:white;">카톡/공유하기 시도</button>
+        <button onclick="closePopup()" style="background:#444; color:white;">닫기</button>
+    </div>
 </div>
 
 <script>
@@ -246,33 +254,50 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    async function saveAsImage() {
+    // 전역 변수로 이미지 파일 보관
+    let currentShareFile = null;
+
+    async function generateReportImage() {
         const captureArea = document.getElementById('captureArea');
-        
         try {
             const canvas = await html2canvas(captureArea, { 
-                backgroundColor: "#2d3436", // 리포트 배경색에 맞춰 어둡게 설정
-                scale: 3, // 화질을 더 높임
-                useCORS: true,
-                ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
+                backgroundColor: "#2d3436",
+                scale: 3,
+                useCORS: true
             });
-
             const imageData = canvas.toDataURL("image/png");
-
-            // 팝업으로 이미지를 띄움
-            const pop = document.getElementById('imagePopup');
-            const popImg = document.getElementById('popImg');
             
-            popImg.src = imageData;
-            pop.style.display = 'flex';
+            // 팝업 띄우기
+            document.getElementById('popImg').src = imageData;
+            document.getElementById('imagePopup').style.display = 'flex';
 
-            // 만약 꾹 눌러도 안 된다면 화면 캡처라도 편하게 할 수 있도록 가이드
-            console.log("이미지가 팝업으로 생성되었습니다.");
+            // 공유용 파일 미리 준비
+            const blob = await (await fetch(imageData)).blob();
+            currentShareFile = new File([blob], `settlement_${new Date().getTime()}.png`, { type: 'image/png' });
 
         } catch (e) {
-            console.error(e);
-            alert("이미지 생성 중 오류가 발생했습니다.");
+            alert("이미지 생성 중 오류 발생");
         }
+    }
+
+    async function shareImage() {
+        if (!currentShareFile) return;
+        try {
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [currentShareFile] })) {
+                await navigator.share({
+                    files: [currentShareFile],
+                    title: '팀 정산 리포트'
+                });
+            } else {
+                alert("공유 기능을 지원하지 않는 환경입니다. 화면을 캡처해 주세요!");
+            }
+        } catch (e) {
+            alert("공유 취소 또는 오류");
+        }
+    }
+
+    function closePopup() {
+        document.getElementById('imagePopup').style.display = 'none';
     }
 </script>
 </body>
