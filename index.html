@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>팀 정산 어플 (Pro)</title>
+    <title>팀 정산 어플 (Final)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v24] Internal Scroll Implementation */
+        /* [Final Version] Polished UX & Empty State & Factory Reset */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -18,21 +18,39 @@
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         
-        /* [핵심 수정] 리스트 영역에 내부 스크롤 적용 */
+        /* [수정] 스크롤 영역 */
         #itemList {
-            max-height: 60vh; /* 화면 높이의 60%까지만 늘어남 */
-            overflow-y: auto; /* 넘치면 세로 스크롤 생성 */
-            padding-right: 4px; /* 스크롤바와 내용 간격 */
-            margin-bottom: 10px;
-            /* 부드러운 스크롤 */
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 4px;
+            margin-bottom: 15px; /* 버튼과 간격 좀 더 확보 */
             scroll-behavior: smooth;
+            min-height: 100px; /* 비어있을 때 최소 높이 확보 */
         }
-
-        /* [디자인] 커스텀 스크롤바 (깔끔하게) */
         #itemList::-webkit-scrollbar { width: 5px; }
         #itemList::-webkit-scrollbar-track { background: transparent; }
         #itemList::-webkit-scrollbar-thumb { background: #d1d8e0; border-radius: 10px; }
-        #itemList::-webkit-scrollbar-thumb:hover { background: #a5b1c2; }
+
+        /* [추가] 리스트가 비었을 때 보여줄 안내 문구 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 150px;
+            color: #aaa;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .empty-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
+
+        /* [수정] 버튼 영역 (Sticky 느낌 강화) */
+        .button-group {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 20%);
+            padding-top: 10px;
+        }
 
         .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; transition: all 0.3s ease; }
         .item-group.collapsed { border-left: 6px solid var(--success); background: #fafbfc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -45,7 +63,17 @@
         .info-val.team-list { color: var(--primary); }
         .item-body { padding: 15px; border-top: 1px solid #eee; background: #fdfdfd; }
         .collapsed .item-body { display: none; }
-        .remove-btn { position: absolute; right: 8px; top: 10px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
+        
+        /* [수정] 삭제 버튼 터치 영역 확대 (사용성 개선) */
+        .remove-btn { 
+            position: absolute; right: 5px; top: 8px; 
+            background: #f1f3f5; color: #adb5bd; 
+            width: 30px; height: 30px; /* 크기 확대 */
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 18px; border: none; z-index: 5; cursor: pointer;
+        }
+        .remove-btn:active { background: #dee2e6; color: #ff4d4f; }
+
         input[type="text"] { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; }
         .label-text { font-size: 0.8rem; font-weight: bold; margin-top: 12px; margin-bottom: 6px; display: block; color: #555; }
         .flex-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -54,6 +82,7 @@
         .radio-item:has(input:checked), .check-item:has(input:checked) { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: bold; box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3); transform: scale(1.02); }
         .radio-item:has(input:checked)::before, .check-item:has(input:checked)::before { content: '✔'; margin-right: 4px; font-size: 0.85rem; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .save-btn { background: var(--success); color: white; margin-top: 15px; padding: 12px; font-size: 0.9rem; }
         .add-btn { background: #495057; color: white; margin-bottom: 8px; }
@@ -83,6 +112,10 @@
         .del-btn { background: #ff4d4f; color: white; width: 40px; padding: 0; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
         .add-small-btn { background: #eee; color: #333; font-size: 0.8rem; padding: 8px; margin-top: 5px; }
         .modal-close-btn { background: var(--dark); color: white; margin-top: 10px; }
+        
+        /* [추가] 초기화 버튼 스타일 */
+        .reset-all-btn { background: #fff0f0; color: #ff4d4f; border: 1px solid #ffccc7; font-size: 0.8rem; padding: 10px; margin-top: 25px; width: 100%; }
+        
         .radio-wrapper { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; margin-bottom: 5px; }
 
         .settle-card { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 4px solid; }
@@ -110,9 +143,11 @@
     <div class="card">
         <div id="itemList"></div>
         
-        <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
-        <button class="clear-btn" onclick="clearAllItems()">🗑️ 모든 내역 지우기</button>
-        <button class="calc-btn" onclick="calculate()">🚀 정산 결과 확인</button>
+        <div class="button-group">
+            <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
+            <button class="clear-btn" onclick="clearAllItems()">🗑️ 모든 내역 지우기</button>
+            <button class="calc-btn" onclick="calculate()">🚀 정산 결과 확인</button>
+        </div>
     </div>
 
     <div id="captureArea">
@@ -144,7 +179,9 @@
             <div id="memberSettingList"></div>
             <button class="add-small-btn" onclick="addMemberInput()">+ 팀원 추가하기</button>
         </div>
+        
         <button class="modal-close-btn" onclick="saveSettings()">저장하고 닫기</button>
+        <button class="reset-all-btn" onclick="factoryReset()">🔴 모든 데이터 및 설정 초기화</button>
     </div>
 </div>
 
@@ -198,14 +235,44 @@
     function updateMyTeam(idx) { appConfig.teams.forEach((t, i) => t.isMyTeam = (i === idx)); }
     function addMemberInput() { appConfig.members.push("새팀원"); renderSettingsUI(); }
     function removeMember(idx) { appConfig.members.splice(idx, 1); renderSettingsUI(); }
-    function saveSettings() { localStorage.setItem('appConfig', JSON.stringify(appConfig)); document.getElementById('settingsModal').style.display = 'none'; saveToLocal(); location.reload(); }
+    
+    function saveSettings() { 
+        localStorage.setItem('appConfig', JSON.stringify(appConfig)); 
+        document.getElementById('settingsModal').style.display = 'none'; 
+        saveToLocal(); 
+        location.reload(); 
+    }
+
+    function factoryReset() {
+        if(confirm("정말 초기화하시겠습니까?\n모든 정산 내역과 팀 설정이 삭제됩니다.")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
 
     function loadData() {
         const savedData = localStorage.getItem('settlementData');
-        if (savedData) { JSON.parse(savedData).forEach((item) => renderItem(item)); } else { addNewItem(); }
+        const list = document.getElementById('itemList');
+        list.innerHTML = ""; // 초기화
+
+        if (savedData && JSON.parse(savedData).length > 0) {
+            JSON.parse(savedData).forEach((item) => renderItem(item));
+        } else {
+            // [추가] 데이터가 없을 때 텅 빈 화면 대신 안내 문구 표시
+            list.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📝</div>
+                    <div>아직 내역이 없습니다.<br>아래 버튼을 눌러 추가해주세요.</div>
+                </div>
+            `;
+        }
     }
 
     function renderItem(data = null) {
+        // 첫 아이템 추가 시 empty-state 제거
+        const list = document.getElementById('itemList');
+        if (list.querySelector('.empty-state')) list.innerHTML = "";
+
         const tempId = Date.now() + Math.random();
         const div = document.createElement('div');
         div.className = `item-group ${data?.collapsed ? 'collapsed' : ''}`;
@@ -235,16 +302,21 @@
                 <button class="save-btn" onclick="saveAndCollapse(this)">✔ 이 내역 저장 및 접기</button>
             </div>
         `;
-        document.getElementById('itemList').appendChild(div);
-        updateHeader(div.querySelector('.item-name'));
+        list.appendChild(div);
+        
+        // 데이터가 있을 때만 헤더 업데이트
+        if(data || !data) {
+             updateHeader(div.querySelector('.item-name'));
+        }
     }
 
     function updateHeader(element) {
         const g = element.closest('.item-group');
         const nameInput = g.querySelector('.item-name').value;
         const amt = g.querySelector('.item-amount').value || "0";
-        const payer = g.querySelector(`input[type="radio"]:checked`)?.nextSibling.textContent || "미선택";
+        const payer = g.querySelector(`input[type="radio"]:checked`)?.parentElement.textContent || "미선택";
         const checkedTeams = Array.from(g.querySelectorAll('.team-check:checked')).map(cb => cb.getAttribute('data-name'));
+        
         const allGroups = Array.from(document.querySelectorAll('.item-group'));
         const index = allGroups.indexOf(g) + 1;
         const finalName = nameInput || index + "차";
@@ -262,18 +334,25 @@
     function addNewItem() { renderItem(); }
 
     function clearAllItems() {
-        if(confirm("모든 정산 내역을 초기화하시겠습니까?")) {
+        if(confirm("모든 정산 내역을 지우시겠습니까?\n(설정된 팀 정보는 유지됩니다)")) {
             localStorage.removeItem('settlementData');
-            document.getElementById('itemList').innerHTML = "";
             document.getElementById('result').style.display = 'none';
             document.getElementById('actionButtons').style.display = 'none';
-            addNewItem();
+            loadData(); // 다시 로드해서 빈 화면 표시
         }
     }
 
     function saveAndCollapse(btn) { btn.closest('.item-group').classList.add('collapsed'); saveToLocal(); }
     function toggleItem(header) { header.closest('.item-group').classList.toggle('collapsed'); }
-    function removeItem(btn) { if(confirm("삭제하시겠습니까?")) { btn.closest('.item-group').remove(); saveToLocal(); } }
+    
+    function removeItem(btn) { 
+        if(confirm("삭제하시겠습니까?")) { 
+            btn.closest('.item-group').remove(); 
+            saveToLocal(); 
+            // 다 지우고 하나도 없으면 empty state 표시
+            if(document.querySelectorAll('.item-group').length === 0) loadData();
+        } 
+    }
     
     function saveToLocal() {
         const items = [];
@@ -284,7 +363,7 @@
             items.push({
                 name: g.querySelector('.item-name').value,
                 amount: g.querySelector('.item-amount').value,
-                payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
+                payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.parentElement.textContent || "",
                 teams: teamChecks,
                 collapsed: g.classList.contains('collapsed')
             });
@@ -295,6 +374,8 @@
     function calculate() {
         saveToLocal();
         const items = JSON.parse(localStorage.getItem('settlementData') || "[]");
+        if(items.length === 0) return alert("정산할 내역이 없습니다.");
+        
         const invalid = items.find(i => !i.payer || !i.amount || i.amount === "0");
         if (invalid) return alert("결제 정보가 누락된 항목이 있습니다.");
 
