@@ -6,56 +6,57 @@
     <title>팀 정산 어플 (Pro)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v18] Detailed Header Info */
+        /* [Update: 2026-02-03-v19] Minimal Icon Button & Layout */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
         
+        /* [수정] 헤더 레이아웃 변경 */
         .app-header { 
+            position: relative; /* 자식 요소 절대 위치 기준점 */
             display: flex; 
-            justify-content: space-between; 
+            justify-content: center; /* 제목 중앙 정렬 */
             align-items: center; 
-            margin-bottom: 12px; 
-            padding: 8px 5px 0 5px; 
+            margin-bottom: 15px; 
+            padding: 10px 0;
         }
         
         .app-title { 
             margin: 0; 
-            font-size: 1.2rem; 
+            font-size: 1.25rem; 
             color: #333; 
             font-weight: 800; 
-            white-space: nowrap; 
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
+        /* [핵심] 설정 버튼: 아이콘만 남기고 우측 상단 고정 */
         .setting-btn { 
-            background: #e9ecef; 
+            position: absolute; /* 제목 흐름 방해 없이 우측 고정 */
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%); /* 수직 중앙 보정 */
+            
+            background: transparent; /* 배경 투명 */
             border: none; 
-            padding: 6px 12px; 
-            border-radius: 15px; 
-            font-size: 0.75rem; 
+            padding: 8px; /* 터치 영역 확보 */
+            font-size: 1.4rem; /* 아이콘 크기 키움 */
             cursor: pointer; 
-            font-weight: 600; 
-            color: #666; 
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            white-space: nowrap;
-            transition: background 0.2s;
+            color: #888; 
+            transition: color 0.2s, transform 0.2s;
         }
-        .setting-btn:active { background: #dee2e6; }
+        .setting-btn:active { color: #333; transform: translateY(-50%) scale(0.9); }
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         
+        /* 아이템 그룹 스타일 */
         .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; transition: all 0.3s ease; }
         .item-group.collapsed { border-left: 6px solid var(--success); background: #fafbfc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .item-group.collapsed .title-text::before { content: "✔"; color: var(--success); margin-right: 6px; font-weight: bold; }
         
         .item-header { padding: 12px 45px 12px 15px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
         
-        /* [수정] 서브 텍스트(결제/참여 정보) 스타일 개선 */
         .sub-text { font-size: 0.75rem; color: #666; line-height: 1.4; }
         .info-row { display: flex; align-items: flex-start; gap: 4px; margin-bottom: 2px; }
         .info-label { font-weight: bold; color: #888; white-space: nowrap; }
@@ -114,7 +115,7 @@
 <div class="container">
     <div class="app-header">
         <h1 class="app-title">🧾 팀 정산 어플</h1>
-        <button class="setting-btn" onclick="openSettings()">⚙️ 설정</button>
+        <button class="setting-btn" onclick="openSettings()" aria-label="설정">⚙️</button>
     </div>
 
     <div class="card">
@@ -308,7 +309,6 @@
         
         g.querySelector('.title-text').innerText = `${finalName} (${amt}원)`;
 
-        // [핵심 수정] 참여자 목록과 결제자를 상세하게 표시
         const teamStr = checkedTeams.length > 0 ? checkedTeams.join(', ') : "없음";
         g.querySelector('.sub-text').innerHTML = `
             <div class="info-row"><span class="info-label">💳 결제:</span> <span class="info-val">${payer}</span></div>
