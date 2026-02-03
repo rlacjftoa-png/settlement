@@ -68,7 +68,7 @@
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" id="saveBtn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
+        <button class="image-btn" id="saveBtn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장 (JPG)</button>
     </div>
 </div>
 
@@ -234,11 +234,12 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
+    // [중요] 안드로이드 시스템에서 완벽하게 인식하도록 JPG로 변환 저장하는 함수
     async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
         const btn = document.getElementById('saveBtn');
         
-        btn.innerText = "⏳ 파일 생성 중...";
+        btn.innerText = "⏳ JPG 이미지 최적화 중...";
         btn.disabled = true;
 
         try {
@@ -249,35 +250,36 @@
                 ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
             });
 
-            const imageData = canvas.toDataURL("image/png");
+            // PNG가 아닌 JPG(image/jpeg)로 명시적 변환
+            const imageData = canvas.toDataURL("image/jpeg", 0.9); // 품질 90%
             
-            // 데이터 형태를 Blob으로 변환하여 시스템이 파일로 인식하게 함
+            // 데이터 형태를 명확한 파일 형식으로 변환
             const byteString = atob(imageData.split(',')[1]);
-            const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
             const ab = new ArrayBuffer(byteString.length);
             const ia = new Uint8Array(ab);
             for (let i = 0; i < byteString.length; i++) {
                 ia[i] = byteString.charCodeAt(i);
             }
-            const blob = new Blob([ab], {type: mimeString});
+            const blob = new Blob([ab], {type: "image/jpeg"}); // 타입을 jpeg로 고정
 
-            // 파일명 날짜 조합
             const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-            const fileName = `settlement_${dateStr}.png`;
+            const fileName = `settlement_${dateStr}.jpg`;
 
+            // 시스템 다운로드 요청
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
+            link.href = window.URL.createObjectURL(blob);
             link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            alert("다운로드 창이 뜨면 이름을 확인하고 'YES'를 눌러주세요!\n저장 후 갤러리에 안 보인다면 'Download' 폴더를 확인해 보세요.");
+            alert("이미지가 JPG 파일로 생성되었습니다. 다운로드 창에서 'YES'를 누른 후, 갤러리의 'Download' 폴더를 확인해주세요.");
 
         } catch (e) {
-            alert("이미지 저장 실패. 권한 허용을 다시 확인해 주세요.");
+            console.error(e);
+            alert("이미지 저장 실패. 앱 권한 설정을 확인해 주세요.");
         } finally {
-            btn.innerText = "🖼️ 리포트 이미지 저장";
+            btn.innerText = "🖼️ 리포트 이미지 저장 (JPG)";
             btn.disabled = false;
         }
     }
