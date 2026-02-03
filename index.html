@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>팀 정산 어플 (Final V32)</title>
+    <title>팀 정산 어플 (Final V33)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-04-v32] Applied Truncation to Status Table */
+        /* [Update: 2026-02-04-v33] Fixed Floating Point Precision Error (49,999 -> 50,000) */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -307,9 +307,13 @@
         localStorage.setItem('settlementData', JSON.stringify(items));
     }
 
+    // [핵심 수정] 반올림 후 절사
     function applyTruncate(amount) {
         const unit = appConfig.truncationUnit || 1;
-        return Math.floor(amount / unit) * unit;
+        // 1. 먼저 소수점 정밀도 보정 (반올림)
+        const corrected = Math.round(amount); 
+        // 2. 그 다음 사용자 설정 단위로 내림(버림)
+        return Math.floor(corrected / unit) * unit;
     }
 
     function calculate() {
@@ -385,12 +389,14 @@
             const balance = paid - perMemberShare;
             memberBalances[m] = balance;
 
-            // [수정] 현황판에도 절사 적용
             let displayShare = applyTruncate(perMemberShare);
             let displayBalance = applyTruncate(Math.abs(balance));
-            if (balance < 0) displayBalance = -displayBalance; // 부호 복구
+            if (balance < 0) displayBalance = -displayBalance;
 
-            const diffText = displayBalance >= 0 ? `+${displayBalance.toLocaleString()}` : `${displayBalance.toLocaleString()}`;
+            // [수정] 0원일 때 +0, -0 안 나오게 처리
+            if (displayBalance === 0) displayBalance = 0;
+
+            const diffText = displayBalance > 0 ? `+${displayBalance.toLocaleString()}` : `${displayBalance.toLocaleString()}`;
             const colorClass = displayBalance >= 0 ? 'text-green' : 'text-red';
             
             statusHtml += `
@@ -402,7 +408,6 @@
                 </div>`;
         });
 
-        // STEP 1: Internal Settlement
         let step1Html = "";
         let givers = Object.keys(memberBalances).filter(m => memberBalances[m] < -1);
         let receivers = Object.keys(memberBalances).filter(m => memberBalances[m] > 1);
@@ -430,7 +435,6 @@
         
         if (step1Html === "") step1Html = `<div style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">내부끼리는 주고받을 돈이 없습니다.</div>`;
 
-        // STEP 2: External Settlement
         let step2Html = "";
         let hasExternalAction = false;
 
