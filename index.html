@@ -45,13 +45,6 @@
         .guide-team { font-size: 0.9rem; margin-bottom: 6px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 8px; }
         .send-label { font-size: 0.7rem; color: #ccc; background: #444; padding: 3px 8px; border-radius: 5px; }
-
-        /* 이미지 오버레이 팝업 */
-        #imagePopup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
-        #imagePopup img { max-width: 95%; max-height: 75%; border: 1px solid #444; }
-        .pop-instr { color: #fff; text-align: center; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.4; }
-        .pop-btns { display: flex; gap: 10px; width: 90%; margin-top: 20px; }
-        .pop-btns button { flex: 1; }
     </style>
 </head>
 <body>
@@ -75,20 +68,7 @@
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" onclick="generateReportImage()">🖼️ 리포트 이미지 생성</button>
-    </div>
-</div>
-
-<div id="imagePopup">
-    <div class="pop-instr">
-        📍 <b>이미지 생성 완료</b> 📍<br>
-        현재 앱 설정으로 자동 저장이 막혀있습니다.<br>
-        <b>이 화면을 그대로 '캡처'해서 공유해 주세요!</b>
-    </div>
-    <img id="popImg" src="" alt="정산리포트">
-    <div class="pop-btns">
-        <button onclick="shareImage()" style="background:var(--primary); color:white;">카톡/공유하기 시도</button>
-        <button onclick="closePopup()" style="background:#444; color:white;">닫기</button>
+        <button class="image-btn" id="saveBtn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
     </div>
 </div>
 
@@ -254,50 +234,39 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    // 전역 변수로 이미지 파일 보관
-    let currentShareFile = null;
-
-    async function generateReportImage() {
+    // 권한 설정 후 작동할 이미지 저장 함수
+    async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
+        const btn = document.getElementById('saveBtn');
+        
+        btn.innerText = "⏳ 저장 중...";
+        btn.disabled = true;
+
         try {
             const canvas = await html2canvas(captureArea, { 
                 backgroundColor: "#2d3436",
                 scale: 3,
-                useCORS: true
+                useCORS: true,
+                ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
             });
+
             const imageData = canvas.toDataURL("image/png");
-            
-            // 팝업 띄우기
-            document.getElementById('popImg').src = imageData;
-            document.getElementById('imagePopup').style.display = 'flex';
-
-            // 공유용 파일 미리 준비
             const blob = await (await fetch(imageData)).blob();
-            currentShareFile = new File([blob], `settlement_${new Date().getTime()}.png`, { type: 'image/png' });
+            
+            // 안드로이드 표준 다운로드 호출
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `정산리포트_${new Date().getTime()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
         } catch (e) {
-            alert("이미지 생성 중 오류 발생");
+            alert("이미지 저장 실패. 권한 허용 여부를 다시 확인해 주세요.");
+        } finally {
+            btn.innerText = "🖼️ 리포트 이미지 저장";
+            btn.disabled = false;
         }
-    }
-
-    async function shareImage() {
-        if (!currentShareFile) return;
-        try {
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [currentShareFile] })) {
-                await navigator.share({
-                    files: [currentShareFile],
-                    title: '팀 정산 리포트'
-                });
-            } else {
-                alert("공유 기능을 지원하지 않는 환경입니다. 화면을 캡처해 주세요!");
-            }
-        } catch (e) {
-            alert("공유 취소 또는 오류");
-        }
-    }
-
-    function closePopup() {
-        document.getElementById('imagePopup').style.display = 'none';
     }
 </script>
 </body>
