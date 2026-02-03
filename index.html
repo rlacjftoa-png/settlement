@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium 팀 정산 v9</title>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <title>Premium 팀 정산 v10</title>
+    <script src="https://html2canvas.h7n.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #5c67f2;
@@ -31,16 +31,11 @@
 
         h2 { margin: 0 0 20px 0; font-size: 1.25rem; text-align: center; font-weight: 800; }
 
-        /* 입력창 너비 버그 수정 */
         .input-field {
-            width: 100%; 
-            box-sizing: border-box;
-            padding: 14px 15px; 
-            margin: 8px 0; 
-            border: 1.5px solid #edf2f7; 
-            border-radius: 14px; 
-            font-size: 1rem;
-            display: block;
+            width: 100%; box-sizing: border-box;
+            padding: 14px 15px; margin: 8px 0; 
+            border: 1.5px solid #edf2f7; border-radius: 14px; 
+            font-size: 1rem; display: block;
         }
 
         .item-group { 
@@ -124,7 +119,7 @@
     ];
 
     window.onload = () => {
-        const saved = localStorage.getItem('settlementDataV9');
+        const saved = localStorage.getItem('settlementDataV10');
         if (saved) JSON.parse(saved).forEach(data => renderItem(data));
         else addNewItem();
     }
@@ -144,15 +139,13 @@
             <div class="item-body">
                 <input type="text" placeholder="항목명 (예: 1차 점심)" class="input-field item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
                 <input type="text" placeholder="금액 입력" class="input-field item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
-                
                 <span class="label-text">💳 결제자 선택</span>
                 <div class="flex-group">
                     ${payers.map(p => `
                         <label class="chip"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
                     `).join('')}
                 </div>
-                
-                <span class="label-text">👥 참여 팀 (이름 포함)</span>
+                <span class="label-text">👥 참여 팀</span>
                 <div class="flex-group">
                     ${Object.keys(teamInfo).map(key => `
                         <label class="chip">
@@ -161,7 +154,7 @@
                         </label>
                     `).join('')}
                 </div>
-                <button class="save-btn" onclick="saveAndCollapse(this)">입력 완료 및 접기</button>
+                <button class="save-btn" onclick="saveAndCollapse(this)">입력 완료</button>
             </div>
         `;
         document.getElementById('itemList').appendChild(div);
@@ -172,15 +165,13 @@
         const g = el.closest('.item-group');
         const name = g.querySelector('.item-name').value || "항목명 미입력";
         const amt = g.querySelector('.item-amount').value || "0";
-        const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "결제자 미지정";
-        
+        const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미지정";
         const activeTeams = [];
-        if(g.querySelector('.team-a').checked) activeTeams.push(`${teamInfo.A.name}(${teamInfo.A.members})`);
-        if(g.querySelector('.team-b').checked) activeTeams.push(`${teamInfo.B.name}(${teamInfo.B.members})`);
-        if(g.querySelector('.team-c').checked) activeTeams.push(`${teamInfo.C.name}(${teamInfo.C.members})`);
-        
+        if(g.querySelector('.team-a').checked) activeTeams.push("A팀");
+        if(g.querySelector('.team-b').checked) activeTeams.push("B팀");
+        if(g.querySelector('.team-c').checked) activeTeams.push("C팀");
         g.querySelector('.title-text').innerText = `${name} (${amt}원)`;
-        g.querySelector('.sub-text').innerHTML = `<b>결제:</b> ${payer}<br><b>참여:</b> ${activeTeams.join(', ') || '없음'}`;
+        g.querySelector('.sub-text').innerHTML = `<b>결제:</b> ${payer} | <b>참여:</b> ${activeTeams.join(', ')}`;
         saveToLocal();
     }
 
@@ -200,19 +191,19 @@
                 collapsed: g.classList.contains('collapsed')
             };
         });
-        localStorage.setItem('settlementDataV9', JSON.stringify(items));
+        localStorage.setItem('settlementDataV10', JSON.stringify(items));
     }
 
     function toggleItem(h) { h.closest('.item-group').classList.toggle('collapsed'); }
     function saveAndCollapse(b) { b.closest('.item-group').classList.add('collapsed'); saveToLocal(); }
     function removeItem(b) { if(confirm("삭제하시겠습니까?")) { b.closest('.item-group').remove(); saveToLocal(); } }
-    function clearAllItems() { if(confirm("모든 데이터를 초기화하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+    function clearAllItems() { if(confirm("초기화하시겠습니까?")) { localStorage.clear(); location.reload(); } }
     function addNewItem() { renderItem(); window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'}); }
 
     function calculate() {
         saveToLocal();
-        const items = JSON.parse(localStorage.getItem('settlementDataV9') || "[]");
-        if(items.some(i => !i.payer || !i.amount || i.amount === "0")) return alert("결제자 또는 금액이 누락되었습니다.");
+        const items = JSON.parse(localStorage.getItem('settlementDataV10') || "[]");
+        if(items.some(i => !i.payer || !i.amount || i.amount === "0")) return alert("누락된 정보를 확인해주세요.");
 
         let total = 0, teamPaid = {A:0, B:0, C:0}, teamSpent = {A:0, B:0, C:0}, indC = {지훈:0, 은혜:0};
         let tableHtml = `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px;">
@@ -223,19 +214,22 @@
             total += amt;
             tableHtml += `<tr style="border-bottom:1px solid #2a2d30;"><td style="padding:10px 0;">${item.name || (idx+1)+'차'}</td><td>${item.payer.split('(')[0]}</td><td align="right">${amt.toLocaleString()}원</td></tr>`;
             
+            // 1. 팀별 총 지출액(Paid) 계산
             if(item.payer.includes('A팀')) teamPaid.A += amt;
             else if(item.payer.includes('B팀')) teamPaid.B += amt;
             else { 
                 teamPaid.C += amt; 
+                // C팀 내부 정산을 위해 개인 지출액 별도 합산
                 if(item.payer === '지훈') indC.지훈 += amt; 
                 if(item.payer === '은혜') indC.은혜 += amt; 
             }
 
+            // 2. 팀별 마땅히 내야 할 돈(Spent) 계산
             const active = Object.keys(item.teams).filter(k => item.teams[k]);
             active.forEach(t => teamSpent[t] += (amt / active.length));
         });
 
-        // 외부 정산 가이드 생성
+        // 3. 팀 vs 팀 정산 가이드
         let diff = [
             {n: `${teamInfo.A.name}(${teamInfo.A.members})`, v: teamPaid.A-teamSpent.A},
             {n: `${teamInfo.B.name}(${teamInfo.B.members})`, v: teamPaid.B-teamSpent.B},
@@ -249,7 +243,7 @@
         sendersList.forEach(s => {
             let debt = Math.abs(s.v);
             payersList.forEach(p => {
-                if(debt <= 0 || p.v <= 0) return;
+                if(debt <= 1 || p.v <= 1) return; // 1원 이하는 무시
                 let amount = Math.min(debt, p.v);
                 msg += `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:16px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1);">
                             <span style="color:var(--accent); font-weight:700; display:block; margin-bottom:5px;">💰 ${s.n} → ${p.n}</span>
@@ -259,13 +253,15 @@
             });
         });
 
-        // 내부 정산 핵심 로직 수정
-        const halfSpentC = teamSpent.C / 2;
-        const jihoonDebt = halfSpentC - indC.지훈;
-        let internalMsg = Math.round(jihoonDebt) === 0 ? "정산 완료" : (jihoonDebt > 0 ? `지훈 → 은혜: ${Math.round(jihoonDebt).toLocaleString()}원` : `은혜 → 지훈: ${Math.round(Math.abs(jihoonDebt)).toLocaleString()}원`);
+        // 4. [수정 완료] C팀 내부 정산: 단순히 지훈과 은혜가 낸 돈의 합을 1/2로 나눔
+        const totalPaidByC = indC.지훈 + indC.은혜;
+        const targetPerPerson = totalPaidByC / 2;
+        const jihoonFinal = targetPerPerson - indC.지훈;
+
+        let internalMsg = Math.abs(jihoonFinal) < 1 ? "정산 완료" : (jihoonFinal > 0 ? `지훈 → 은혜: ${Math.round(jihoonFinal).toLocaleString()}원` : `은혜 → 지훈: ${Math.round(Math.abs(jihoonFinal)).toLocaleString()}원`);
 
         document.getElementById('reportHeader').innerHTML = tableHtml + `<div style="text-align:right; font-weight:bold; margin-top:15px; color:var(--accent); font-size:1.1rem;">총 합계: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="color:#888; font-size:0.8rem; margin-bottom:10px;">송금 가이드</div>${msg || "정산 내역 없음"}`;
+        document.getElementById('reportGuide').innerHTML = `<div style="color:#888; font-size:0.8rem; margin-bottom:10px;">팀간 정산 가이드</div>${msg || "정산 완료"}`;
         document.getElementById('privateSection').innerHTML = `<div style="margin-top:20px; padding-top:15px; border-top:1px dashed #444; font-size:0.85rem; color:#aaa;">[C팀 내부 정산] <span class="highlight">${internalMsg}</span></div>`;
         
         document.getElementById('result').style.display = 'block';
@@ -278,7 +274,7 @@
         ps.style.display = 'none';
         html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f8f9fd", scale: 2 }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `Settlement_Report.png`;
+            link.download = `Settlement_v10.png`;
             link.href = canvas.toDataURL();
             link.click();
             ps.style.display = 'block';
