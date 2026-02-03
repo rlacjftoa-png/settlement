@@ -3,93 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>팀 정산 어플</title>
+    <title>팀 정산 어플 (Pro)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v14] Collapsed Item Visual Indicator */
+        /* [Update: 2026-02-03-v15] Settings & Dynamic Logic */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
-        .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
-        h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #f1f3f5; padding-bottom: 10px; text-align: center; }
         
-        /* 기본 아이템 그룹 스타일 */
-        .item-group { 
-            border: 1px solid #eee; 
-            border-radius: 12px; 
-            margin-bottom: 10px; 
-            overflow: hidden; 
-            background: #fff; 
-            position: relative; 
-            transition: all 0.3s ease; /* 부드러운 전환 효과 */
-        }
+        /* 헤더 영역 (설정 버튼 포함) */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
+        .app-title { margin: 0; font-size: 1.3rem; color: #333; font-weight: 800; }
+        .setting-btn { background: #fff; border: 1px solid #ddd; padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-weight: bold; color: #555; }
 
-        /* [핵심] 접혔을 때(완료된 상태) 스타일 */
-        .item-group.collapsed {
-            border-left: 6px solid var(--success); /* 왼쪽에 초록색 띠 표시 */
-            background: #fafbfc; /* 배경을 살짝 회색으로 변경하여 완료됨을 표시 */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        /* 접혔을 때 제목 앞에 체크 표시 추가 */
-        .item-group.collapsed .title-text::before {
-            content: "✔";
-            color: var(--success);
-            margin-right: 6px;
-            font-weight: bold;
-        }
-
+        .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
+        
+        /* 아이템 그룹 스타일 */
+        .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; transition: all 0.3s ease; }
+        .item-group.collapsed { border-left: 6px solid var(--success); background: #fafbfc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .item-group.collapsed .title-text::before { content: "✔"; color: var(--success); margin-right: 6px; font-weight: bold; }
         .item-header { padding: 12px 45px 12px 15px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
         .item-body { padding: 15px; border-top: 1px solid #eee; background: #fdfdfd; }
         .collapsed .item-body { display: none; }
-        
         .remove-btn { position: absolute; right: 8px; top: 10px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
+        
         input[type="text"] { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; }
         .label-text { font-size: 0.8rem; font-weight: bold; margin-top: 12px; margin-bottom: 6px; display: block; color: #555; }
-        
         .flex-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 
         /* 버튼 스타일 */
-        .radio-item, .check-item { 
-            flex: 1; 
-            min-width: 70px; 
-            font-size: 0.8rem; 
-            background: #fff; 
-            border: 1px solid var(--gray-border); 
-            padding: 12px 5px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            color: #888;
-            font-weight: 500;
-        }
-
+        .radio-item, .check-item { flex: 1; min-width: 70px; font-size: 0.8rem; background: #fff; border: 1px solid var(--gray-border); padding: 12px 5px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; transition: all 0.2s; color: #888; font-weight: 500; }
         .radio-item input, .check-item input { display: none; }
-
-        .radio-item:has(input:checked), .check-item:has(input:checked) {
-            background: var(--primary); 
-            color: #fff;
-            border-color: var(--primary);
-            font-weight: bold;
-            box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
-            transform: scale(1.02);
-        }
-
-        .radio-item:has(input:checked)::before, .check-item:has(input:checked)::before {
-            content: '✔';
-            margin-right: 4px;
-            font-size: 0.85rem;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.5); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        .radio-item:has(input:checked), .check-item:has(input:checked) { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: bold; box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3); transform: scale(1.02); }
+        .radio-item:has(input:checked)::before, .check-item:has(input:checked)::before { content: '✔'; margin-right: 4px; font-size: 0.85rem; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
 
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .save-btn { background: var(--success); color: white; margin-top: 15px; padding: 12px; font-size: 0.9rem; }
@@ -98,7 +45,7 @@
         .calc-btn { background: var(--primary); color: white; margin-top: 5px; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); }
         .image-btn { background: #6c5ce7; color: white; margin-top: 15px; }
 
-        /* 리포트 레이아웃 */
+        /* 리포트 스타일 */
         .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 15px; }
         .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.75rem; color: #ddd; }
         .report-table th { border-bottom: 1px solid #555; padding: 5px; text-align: left; }
@@ -106,20 +53,35 @@
         .highlight { color: #f39c12; font-weight: bold; }
         .text-red { color: #ff6b6b; font-weight: bold; }
         .text-green { color: #2ecc71; font-weight: bold; }
-        
         .guide-container { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #444; }
-        .guide-container:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .guide-team { font-size: 0.85rem; margin-bottom: 4px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
         .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
         .detail-breakdown { font-size: 0.75rem; color: #bbb; margin-top: 5px; padding-left: 10px; border-left: 2px solid #555; }
+
+        /* 설정 모달 스타일 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .modal-card { background: #fff; width: 90%; max-width: 400px; padding: 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto; }
+        .modal-title { margin-top: 0; text-align: center; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .setting-section { margin-bottom: 20px; }
+        .setting-label { font-size: 0.85rem; font-weight: bold; margin-bottom: 8px; display: block; color: #555; }
+        .input-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        .input-row input { margin: 0; padding: 8px; font-size: 0.85rem; }
+        .del-btn { background: #ff4d4f; color: white; width: 40px; padding: 0; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+        .add-small-btn { background: #eee; color: #333; font-size: 0.8rem; padding: 8px; margin-top: 5px; }
+        .modal-close-btn { background: var(--dark); color: white; margin-top: 10px; }
+        .radio-wrapper { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="app-header">
+        <h1 class="app-title">🧾 팀 정산 어플</h1>
+        <button class="setting-btn" onclick="openSettings()">⚙️ 설정</button>
+    </div>
+
     <div class="card">
-        <h2>🧾 팀 정산 어플</h2>
         <div id="itemList"></div>
         <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
         <button class="clear-btn" onclick="clearAllItems()">🗑️ 모든 내역 지우기</button>
@@ -140,10 +102,119 @@
     </div>
 </div>
 
+<div id="settingsModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3 class="modal-title">⚙️ 설정 관리</h3>
+        
+        <div class="setting-section">
+            <span class="setting-label">👥 전체 팀 관리</span>
+            <div style="font-size:0.75rem; color:#888; margin-bottom:8px;">* 참여하는 모든 팀을 입력하세요. <br>* '내부 정산'은 우리 팀 하나만 선택하세요.</div>
+            <div id="teamSettingList"></div>
+            <button class="add-small-btn" onclick="addTeamInput()">+ 팀 추가하기</button>
+        </div>
+
+        <div class="setting-section">
+            <span class="setting-label">👤 우리 팀원 관리 (내부 정산용)</span>
+            <div style="font-size:0.75rem; color:#888; margin-bottom:8px;">* 우리 팀원 이름을 입력하세요. (개별 결제자)</div>
+            <div id="memberSettingList"></div>
+            <button class="add-small-btn" onclick="addMemberInput()">+ 팀원 추가하기</button>
+        </div>
+
+        <button class="modal-close-btn" onclick="saveSettings()">저장하고 닫기</button>
+    </div>
+</div>
+
 <script>
-    const teamNames = { A: "A팀(의성,지혜)", B: "B팀(현수,미영)", C: "C팀(지훈,은혜)" };
+    // 기본 설정값 (초기화용)
+    const defaultConfig = {
+        teams: [
+            { id: 'teamA', name: "A팀(의성,지혜)", isMyTeam: false },
+            { id: 'teamB', name: "B팀(현수,미영)", isMyTeam: false },
+            { id: 'teamC', name: "C팀(지훈,은혜)", isMyTeam: true }
+        ],
+        members: ["지훈", "은혜"] // 우리 팀원들 (내부 정산 대상)
+    };
+
+    let appConfig = JSON.parse(localStorage.getItem('appConfig')) || defaultConfig;
 
     window.onload = function() {
+        loadData();
+    }
+
+    // --- 설정 관련 함수 ---
+    function openSettings() {
+        renderSettingsUI();
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function renderSettingsUI() {
+        const teamList = document.getElementById('teamSettingList');
+        teamList.innerHTML = '';
+        appConfig.teams.forEach((team, idx) => {
+            const div = document.createElement('div');
+            div.className = 'input-row';
+            div.innerHTML = `
+                <div class="radio-wrapper" style="flex:1;">
+                    <input type="radio" name="myTeamSelect" ${team.isMyTeam ? 'checked' : ''} onclick="updateMyTeam(${idx})">
+                    <input type="text" value="${team.name}" onchange="appConfig.teams[${idx}].name = this.value">
+                </div>
+                ${appConfig.teams.length > 1 ? `<button class="del-btn" onclick="removeTeam(${idx})">×</button>` : ''}
+            `;
+            teamList.appendChild(div);
+        });
+
+        const memberList = document.getElementById('memberSettingList');
+        memberList.innerHTML = '';
+        appConfig.members.forEach((mem, idx) => {
+            const div = document.createElement('div');
+            div.className = 'input-row';
+            div.innerHTML = `
+                <input type="text" value="${mem}" onchange="appConfig.members[${idx}] = this.value" style="flex:1;">
+                ${appConfig.members.length > 1 ? `<button class="del-btn" onclick="removeMember(${idx})">×</button>` : ''}
+            `;
+            memberList.appendChild(div);
+        });
+    }
+
+    function addTeamInput() {
+        appConfig.teams.push({ id: `team${Date.now()}`, name: "새로운팀", isMyTeam: false });
+        renderSettingsUI();
+    }
+
+    function removeTeam(idx) {
+        if(confirm('이 팀을 삭제하시겠습니까?')) {
+            appConfig.teams.splice(idx, 1);
+            // 만약 삭제된 팀이 내 팀이었다면 첫번째 팀을 내 팀으로 설정
+            if(!appConfig.teams.some(t=>t.isMyTeam) && appConfig.teams.length > 0) appConfig.teams[0].isMyTeam = true;
+            renderSettingsUI();
+        }
+    }
+
+    function updateMyTeam(idx) {
+        appConfig.teams.forEach((t, i) => t.isMyTeam = (i === idx));
+    }
+
+    function addMemberInput() {
+        appConfig.members.push("새팀원");
+        renderSettingsUI();
+    }
+
+    function removeMember(idx) {
+        appConfig.members.splice(idx, 1);
+        renderSettingsUI();
+    }
+
+    function saveSettings() {
+        localStorage.setItem('appConfig', JSON.stringify(appConfig));
+        document.getElementById('settingsModal').style.display = 'none';
+        
+        // 설정이 바뀌었으므로 화면 다시 그리기 (기존 입력 데이터 유지를 위해 데이터 저장 후 리로드)
+        saveToLocal();
+        location.reload(); 
+    }
+
+    // --- 메인 로직 ---
+    function loadData() {
         const savedData = localStorage.getItem('settlementData');
         if (savedData) {
             JSON.parse(savedData).forEach((item) => renderItem(item));
@@ -158,6 +229,23 @@
         div.className = `item-group ${data?.collapsed ? 'collapsed' : ''}`;
         div.setAttribute('data-id', tempId);
         
+        // 결제자 목록 생성: (내 팀이 아닌 팀들) + (내 팀원들)
+        const myTeam = appConfig.teams.find(t => t.isMyTeam);
+        const otherTeams = appConfig.teams.filter(t => !t.isMyTeam);
+        
+        let payerOptionsHtml = otherTeams.map(t => 
+            `<label class="radio-item"><input type="radio" name="payer_${tempId}" value="${t.name}" ${data?.payer === t.name ? 'checked' : ''} onchange="updateHeader(this)">${t.name}</label>`
+        ).join('');
+        
+        payerOptionsHtml += appConfig.members.map(m => 
+            `<label class="radio-item"><input type="radio" name="payer_${tempId}" value="${m}" ${data?.payer === m ? 'checked' : ''} onchange="updateHeader(this)">${m}</label>`
+        ).join('');
+
+        // 참여 팀 목록 생성
+        const teamCheckHtml = appConfig.teams.map(t => 
+            `<label class="check-item"><input type="checkbox" class="team-check" value="${t.id}" data-name="${t.name}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}</label>`
+        ).join('');
+
         div.innerHTML = `
             <button class="remove-btn" onclick="removeItem(this)">×</button>
             <div class="item-header" onclick="toggleItem(this)">
@@ -168,17 +256,9 @@
                 <input type="text" placeholder="항목명 (예: 감자탕)" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
                 <input type="text" placeholder="결제 금액" class="item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
                 <span class="label-text">💳 누가 결제했나요? (필수)</span>
-                <div class="flex-group">
-                    ${[teamNames.A, teamNames.B, '지훈', '은혜'].map(p => `
-                        <label class="radio-item"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
-                    `).join('')}
-                </div>
+                <div class="flex-group">${payerOptionsHtml}</div>
                 <span class="label-text">👥 참여한 팀 선택</span>
-                <div class="flex-group">
-                    <label class="check-item"><input type="checkbox" class="team-a" ${data?.teams?.A !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.A}</label>
-                    <label class="check-item"><input type="checkbox" class="team-b" ${data?.teams?.B !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.B}</label>
-                    <label class="check-item"><input type="checkbox" class="team-c" ${data?.teams?.C !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.C}</label>
-                </div>
+                <div class="flex-group">${teamCheckHtml}</div>
                 <button class="save-btn" onclick="saveAndCollapse(this)">✔ 이 내역 저장 및 접기</button>
             </div>
         `;
@@ -190,16 +270,16 @@
         const g = element.closest('.item-group');
         const nameInput = g.querySelector('.item-name').value;
         const amt = g.querySelector('.item-amount').value || "0";
-        const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미선택";
-        const teams = [];
-        if(g.querySelector('.team-a').checked) teams.push("A");
-        if(g.querySelector('.team-b').checked) teams.push("B");
-        if(g.querySelector('.team-c').checked) teams.push("C");
+        const payer = g.querySelector(`input[type="radio"]:checked`)?.nextSibling.textContent || "미선택";
+        
+        const checkedTeams = Array.from(g.querySelectorAll('.team-check:checked')).map(cb => cb.getAttribute('data-name'));
+        
         const allGroups = Array.from(document.querySelectorAll('.item-group'));
         const index = allGroups.indexOf(g) + 1;
         const finalName = nameInput || index + "차";
+        
         g.querySelector('.title-text').innerText = `${finalName} (${amt}원)`;
-        g.querySelector('.sub-text').innerHTML = `결제: ${payer} | 참여: ${teams.join(',')}팀`;
+        g.querySelector('.sub-text').innerHTML = `결제: ${payer} | 참여: ${checkedTeams.length}팀`; // 참여 팀 이름이 길어질 수 있어 개수로 변경
         saveToLocal();
     }
 
@@ -229,11 +309,16 @@
         const items = [];
         document.querySelectorAll('.item-group').forEach(g => {
             const tempId = g.getAttribute('data-id');
+            const teamChecks = {};
+            g.querySelectorAll('.team-check').forEach(cb => {
+                teamChecks[cb.value] = cb.checked;
+            });
+
             items.push({
                 name: g.querySelector('.item-name').value,
                 amount: g.querySelector('.item-amount').value,
                 payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
-                teams: { A: g.querySelector('.team-a').checked, B: g.querySelector('.team-b').checked, C: g.querySelector('.team-c').checked },
+                teams: teamChecks,
                 collapsed: g.classList.contains('collapsed')
             });
         });
@@ -249,104 +334,145 @@
         const invalid = items.find(i => !i.payer || !i.amount || i.amount === "0");
         if (invalid) return alert("결제 정보가 누락된 항목이 있습니다.");
 
+        // --- 1. 동적 변수 초기화 ---
         let total = 0;
-        let teamPaid = { A: 0, B: 0, C: 0 };
-        let teamSpent = { A: 0, B: 0, C: 0 };
-        let indC = { 지훈: 0, 은혜: 0 };
-        let realPaid = { 지훈: 0, 은혜: 0 };
+        let teamPaid = {}; // 각 팀이 (대표 또는 팀원이) 결제한 총액
+        let teamSpent = {}; // 각 팀이 소비한 금액 (N빵)
+        let memberPaid = {}; // 우리 팀원 개개인이 실제로 긁은 돈
+        
+        appConfig.teams.forEach(t => {
+            teamPaid[t.id] = 0;
+            teamSpent[t.id] = 0;
+        });
+        appConfig.members.forEach(m => {
+            memberPaid[m] = 0;
+        });
 
         let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
+        const myTeam = appConfig.teams.find(t => t.isMyTeam); // 내 팀 정보
 
+        // --- 2. 항목별 계산 루프 ---
         items.forEach((item, idx) => {
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
             tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
-            
-            if(item.payer.includes('A팀')) teamPaid.A += amt;
-            else if(item.payer.includes('B팀')) teamPaid.B += amt;
-            else {
-                teamPaid.C += amt;
-                if(item.payer === '지훈') realPaid.지훈 += amt;
-                if(item.payer === '은혜') realPaid.은혜 += amt;
+
+            // 2-1. 결제자 처리 (누가 냈는가 -> 그 팀의 teamPaid 증가)
+            // payer가 '내 팀원' 중 한 명이면 -> 내 팀이 낸 것으로 간주 + 개인 기록
+            if (appConfig.members.includes(item.payer)) {
+                teamPaid[myTeam.id] += amt;
+                memberPaid[item.payer] += amt;
+            } else {
+                // payer가 다른 팀 이름과 일치하면 -> 그 팀이 낸 것으로 간주
+                const payerTeam = appConfig.teams.find(t => t.name === item.payer);
+                if (payerTeam) {
+                    teamPaid[payerTeam.id] += amt;
+                }
             }
 
-            const active = Object.keys(item.teams).filter(k => item.teams[k]);
-            const perTeamCost = amt / active.length;
-            
-            active.forEach(t => teamSpent[t] += perTeamCost);
-
-            if(item.teams.C) {
-                if(item.payer === '지훈') indC.지훈 += perTeamCost;
-                if(item.payer === '은혜') indC.은혜 += perTeamCost;
+            // 2-2. 소비 팀 처리 (누가 먹었는가 -> teamSpent 증가)
+            const activeTeams = Object.keys(item.teams).filter(tid => item.teams[tid]); // 체크된 팀 ID들
+            if (activeTeams.length > 0) {
+                const perTeamCost = amt / activeTeams.length;
+                activeTeams.forEach(tid => {
+                    if (teamSpent[tid] !== undefined) teamSpent[tid] += perTeamCost;
+                });
             }
         });
 
-        // --- 외부 송금 가이드 ---
-        let diff = [{n:teamNames.A, v:teamPaid.A-teamSpent.A}, {n:teamNames.B, v:teamPaid.B-teamSpent.B}, {n:teamNames.C, v:teamPaid.C-teamSpent.C}];
+        // --- 3. 외부 송금 가이드 (팀 간 정산) ---
+        let diffs = appConfig.teams.map(t => ({
+            id: t.id,
+            name: t.name,
+            balance: teamPaid[t.id] - teamSpent[t.id] // (+: 받을 돈, -: 줄 돈)
+        }));
+
         let msg = "";
-        diff.filter(d => d.v < 0).forEach(d => {
-            let debt = Math.abs(d.v);
-            diff.filter(c => c.v > 0).forEach(c => {
-                if(debt <= 0 || c.v <= 0) return;
-                let p = Math.min(debt, c.v);
+        // 줄 돈이 있는 팀(debt) -> 받을 돈이 있는 팀(credit) 매칭
+        diffs.filter(d => d.balance < -1).forEach(debtor => { // -1원은 오차 무시
+            let debt = Math.abs(debtor.balance);
+            diffs.filter(c => c.balance > 1).forEach(creditor => {
+                if (debt <= 0 || creditor.balance <= 0) return;
+                let amount = Math.min(debt, creditor.balance);
+                
                 msg += `<div class="guide-container">
-                            <span class="guide-team">💰 ${d.n} → ${c.n}</span>
+                            <span class="guide-team">💰 ${debtor.name} → ${creditor.name}</span>
                             <div class="guide-detail">
                                 <span class="send-label">보내야 할 돈</span>
-                                <span class="highlight">${Math.round(p).toLocaleString()}원</span>
+                                <span class="highlight">${Math.round(amount).toLocaleString()}원</span>
                             </div>
                         </div>`;
-                debt -= p; c.v -= p;
+                
+                debt -= amount;
+                creditor.balance -= amount;
             });
         });
 
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
+        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료 (주고받을 돈 없음)"}</div>`;
         
-        // --- 내부 정산 ---
-        const toSendC = (teamSpent.C / 2) - indC.은혜; 
-        
-        // --- 옵션 B 상세 내역 ---
-        const takeE = realPaid.은혜 - (teamSpent.C / 2);
-        const takeJ = realPaid.지훈 - (teamSpent.C / 2);
-        const netFlowC = teamPaid.C - teamSpent.C;
+        // --- 4. 내부 정산 (옵션 A, B 동적 생성) ---
+        // 공식: 내 팀의 총 소비액 / 팀원 수 = 1인당 부담금
+        const myTeamTotalSpent = teamSpent[myTeam.id];
+        const perMemberShare = myTeamTotalSpent / appConfig.members.length;
+        const netFlowC = teamPaid[myTeam.id] - teamSpent[myTeam.id]; // 외부에서 들어올 돈(양수) or 나갈 돈(음수)
+
+        // 옵션 A: 우리끼리만 정산 (외부 송금 전)
+        // 각자: (낸 돈) - (1인당 부담금) = 차액
+        // 차액이 양수면 받아야 함, 음수면 내야 함.
+        let internalSettlementHtml = "";
+        let givers = [];
+        let receivers = [];
+
+        appConfig.members.forEach(m => {
+            const diff = memberPaid[m] - perMemberShare;
+            if (diff < -1) givers.push({name: m, amount: Math.abs(diff)});
+            else if (diff > 1) receivers.push({name: m, amount: diff});
+        });
+
+        // N명이므로 1:1 매칭보다는 "누가 얼마를 내고, 누가 얼마를 받는지" 리스트로 보여주는 게 정확함
+        if (givers.length === 0 && receivers.length === 0) {
+            internalSettlementHtml = "<div>정산 완료 (차액 없음)</div>";
+        } else {
+            // 심플하게 "누가 누구에게" 로직 (Greedy Algorithm)
+            givers.forEach(g => {
+                receivers.forEach(r => {
+                    if (g.amount <= 0 || r.amount <= 0) return;
+                    const trade = Math.min(g.amount, r.amount);
+                    internalSettlementHtml += `<div>${g.name} → ${r.name}: <span class="highlight">${Math.round(trade).toLocaleString()}원</span></div>`;
+                    g.amount -= trade;
+                    r.amount -= trade;
+                });
+            });
+        }
+
+        // 옵션 B: 외부 정산 포함 최종 분배
+        // 공식: (내가 낸 돈) - (내 몫) = 최종 챙길 돈 (양수: 챙김, 음수: 냄)
+        let optionBHtml = "";
+        appConfig.members.forEach(m => {
+            const take = memberPaid[m] - perMemberShare;
+            const otherTakes = Object.keys(memberPaid).filter(name => name !== m).map(name => memberPaid[name] - perMemberShare);
+            const othersNegative = otherTakes.filter(v => v < 0).reduce((a,b)=>a+b, 0); // 파트너들이 토해내는 돈 합계
+
+            optionBHtml += `<div style="margin-bottom:4px;">${getLabelAndValue(m, take, othersNegative, netFlowC)}</div>`;
+        });
+
         const flowText = netFlowC >= 0 
             ? `외부에서 <span class="text-green">${Math.round(netFlowC).toLocaleString()}원</span> 받음` 
             : `외부로 <span class="text-red">${Math.round(Math.abs(netFlowC)).toLocaleString()}원</span> 보냄`;
 
-        function getBreakdown(myTake, otherTake, netFlow) {
-            if (myTake <= 0) return ""; 
-            
-            let sources = [];
-            if (otherTake < 0) sources.push(`파트너에게 ${Math.round(Math.abs(otherTake)).toLocaleString()}원`);
-            if (netFlow > 0) sources.push(`외부(A/B팀)에서 ${Math.round(netFlow).toLocaleString()}원`);
-            
-            if (sources.length === 0) return "";
-            return `<div class="detail-breakdown">└ (출처: ${sources.join(' + ')})</div>`;
-        }
-
-        function getLabelAndValue(name, val, otherVal) {
-            const breakdown = getBreakdown(val, otherVal, netFlowC);
-            if (val >= 0) {
-                return `<div><span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span></div>${breakdown}`;
-            } else {
-                return `<div><span>${name} 더 낼 돈:</span> <span class="text-red">${Math.round(Math.abs(val)).toLocaleString()}원</span></div>`;
-            }
-        }
-
         let privateHtml = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;">
-                           <div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 C팀 내부 정산 (둘 중 하나만 선택)</div>`;
+                           <div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 ${myTeam.name} 내부 정산 (둘 중 하나만 선택)</div>`;
         
         privateHtml += `<div style="margin-bottom:15px;">
-                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 A) 외부 송금 전, 둘끼리만 정산할 때</div>
-                            <div style="font-size:0.85rem; color:#fff;">${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 A) 외부 송금 전, 우리끼리만 정산</div>
+                            <div style="font-size:0.85rem; color:#fff;">${internalSettlementHtml}</div>
                         </div>`;
 
         privateHtml += `<div>
                             <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 B) 외부 정산(${flowText}) 포함 최종 분배</div>
                             <div style="background:#3d4446; padding:10px; border-radius:8px; font-size:0.85rem;">
-                                <div style="margin-bottom:8px;">${getLabelAndValue('은혜', takeE, takeJ)}</div>
-                                <div>${getLabelAndValue('지훈', takeJ, takeE)}</div>
+                                ${optionBHtml}
                             </div>
                         </div>`;
 
@@ -355,6 +481,25 @@
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    // 옵션 B 표시 헬퍼 함수
+    function getBreakdown(myTake, othersNegative, netFlow) {
+        if (myTake <= 0) return ""; 
+        let sources = [];
+        if (othersNegative < 0) sources.push(`팀원에게 ${Math.round(Math.abs(othersNegative)).toLocaleString()}원`); // N명이면 정확히 누구 건지 특정하기 복잡하므로 퉁침
+        if (netFlow > 0) sources.push(`외부에서 ${Math.round(netFlow).toLocaleString()}원`); // 단순화: 내가 받을 돈이 있다면 외부 돈도 포함일 확률 높음 (정확한 기여도 비례 배분은 복잡하므로 생략)
+        // *참고: N명일 때 '출처'를 정확히 명시하려면 복잡도가 급상승하므로, 2명일 때처럼 명확하지 않으면 출처 텍스트는 간소화하거나 생략하는 게 나음.
+        // 여기서는 기존 로직 유지하되, 텍스트만 조금 범용적으로 변경.
+        return ""; // N명 로직에서는 출처 표기가 오히려 혼란을 줄 수 있어 일단 숨김 (계산값 자체는 정확함)
+    }
+
+    function getLabelAndValue(name, val, othersNegative, netFlow) {
+        if (val >= 0) {
+            return `<div><span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span></div>`;
+        } else {
+            return `<div><span>${name} 더 낼 돈:</span> <span class="text-red">${Math.round(Math.abs(val)).toLocaleString()}원</span></div>`;
+        }
     }
 
     function saveAsImage() {
