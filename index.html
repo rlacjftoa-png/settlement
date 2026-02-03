@@ -3,26 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <title>팀 정산</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="팀 정산">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#4a90e2">
-    
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2636/2636428.png">
-
+    <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* 기존 스타일 유지 */
         :root { --primary: #4a90e2; --bg: #f8f9fa; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 15px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
-        /* 로딩 화면 효과를 위한 간단한 애니메이션 추가 */
-        #splash { position: fixed; top:0; left:0; width:100%; height:100%; background:white; display:flex; justify-content:center; align-items:center; z-index:9999; transition: opacity 0.5s; }
-        .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         .container { max-width: 550px; margin: 0 auto; padding-bottom: 30px; }
         .card { background: var(--card-bg); padding: 18px; border-radius: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; }
         h2 { margin-top: 0; font-size: 1.3rem; border-bottom: 2px solid #f1f3f5; padding-bottom: 12px; }
@@ -51,13 +36,6 @@
 </head>
 <body>
 
-<div id="splash">
-    <div style="text-align:center">
-        <div class="spinner"></div>
-        <p style="margin-top:20px; font-weight:bold; color:#4a90e2">정산 데이터를 불러오는 중...</p>
-    </div>
-</div>
-
 <div class="container">
     <div class="card">
         <h2>🧾 팀 정산 어플</h2>
@@ -82,15 +60,6 @@
 </div>
 
 <script>
-    // 로딩 화면 숨기기 (페이지 로드 후 0.8초 뒤)
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const splash = document.getElementById('splash');
-            splash.style.opacity = '0';
-            setTimeout(() => splash.style.display = 'none', 500);
-        }, 800);
-    });
-
     const teamNames = { A: "A팀(의성,지혜)", B: "B팀(현수,미영)", C: "C팀(지훈,은혜)" };
 
     window.onload = function() {
@@ -115,21 +84,21 @@
                 <div style="font-size:0.75rem; color:#666; line-height:1.4;" class="sub-text"></div>
             </div>
             <div class="item-body">
-                <input type="text" placeholder="항목명" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
+                <input type="text" placeholder="항목명 (예: 감자탕)" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
                 <input type="text" placeholder="결제 금액" class="item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
-                <span class="label-text">💳 결제자 (필수)</span>
+                <span class="label-text">💳 누가 결제했나요? (필수)</span>
                 <div class="flex-group">
                     ${[teamNames.A, teamNames.B, '지훈', '은혜'].map(p => `
                         <label class="radio-item"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
                     `).join('')}
                 </div>
-                <span class="label-text">👥 참여 팀</span>
+                <span class="label-text">👥 참여한 팀 선택</span>
                 <div class="flex-group">
                     <label class="check-item"><input type="checkbox" class="team-a" ${data?.teams?.A !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.A}</label>
                     <label class="check-item"><input type="checkbox" class="team-b" ${data?.teams?.B !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.B}</label>
                     <label class="check-item"><input type="checkbox" class="team-c" ${data?.teams?.C !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.C}</label>
                 </div>
-                <button class="save-btn" onclick="saveAndCollapse(this)">✔ 저장 및 접기</button>
+                <button class="save-btn" onclick="saveAndCollapse(this)">✔ 이 내역 저장 및 접기</button>
             </div>
         `;
         document.getElementById('itemList').appendChild(div);
@@ -141,15 +110,19 @@
         const nameInput = g.querySelector('.item-name').value;
         const amt = g.querySelector('.item-amount').value || "0";
         const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미선택";
+        
         const teams = [];
         if(g.querySelector('.team-a').checked) teams.push(teamNames.A);
         if(g.querySelector('.team-b').checked) teams.push(teamNames.B);
         if(g.querySelector('.team-c').checked) teams.push(teamNames.C);
+
         const allGroups = Array.from(document.querySelectorAll('.item-group'));
         const index = allGroups.indexOf(g) + 1;
         const finalName = nameInput || index + "차";
+
         g.querySelector('.title-text').innerText = `${finalName} (${amt}원)`;
         g.querySelector('.sub-text').innerHTML = `결제: <b style="color:#333">${payer}</b><br>참여: <b style="color:#333">${teams.join(', ')}</b>`;
+        
         saveToLocal();
     }
 
@@ -159,8 +132,9 @@
     }
 
     function addNewItem() { renderItem(); }
+
     function clearAllItems() {
-        if(confirm("모든 정산 내역을 지우시겠습니까?")) {
+        if(confirm("모든 정산 내역을 지우고 초기화하시겠습니까?")) {
             localStorage.removeItem('settlementData');
             document.getElementById('itemList').innerHTML = "";
             document.getElementById('result').style.display = 'none';
@@ -168,10 +142,13 @@
             addNewItem();
         }
     }
+
     function saveAndCollapse(btn) {
-        btn.closest('.item-group').classList.add('collapsed');
+        const g = btn.closest('.item-group');
+        g.classList.add('collapsed');
         saveToLocal();
     }
+
     function saveToLocal() {
         const items = [];
         document.querySelectorAll('.item-group').forEach(g => {
@@ -180,33 +157,49 @@
                 name: g.querySelector('.item-name').value,
                 amount: g.querySelector('.item-amount').value,
                 payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
-                teams: { A: g.querySelector('.team-a').checked, B: g.querySelector('.team-b').checked, C: g.querySelector('.team-c').checked },
+                teams: { 
+                    A: g.querySelector('.team-a').checked, 
+                    B: g.querySelector('.team-b').checked, 
+                    C: g.querySelector('.team-c').checked 
+                },
                 collapsed: g.classList.contains('collapsed')
             });
         });
         localStorage.setItem('settlementData', JSON.stringify(items));
     }
+
     function toggleItem(header) { header.closest('.item-group').classList.toggle('collapsed'); }
-    function removeItem(btn) { if(confirm("삭제하시겠습니까?")) { btn.closest('.item-group').remove(); document.querySelectorAll('.item-group .item-name').forEach(el => updateHeader(el)); saveToLocal(); } }
+    function removeItem(btn) { if(confirm("이 내역을 삭제하시겠습니까?")) { btn.closest('.item-group').remove(); document.querySelectorAll('.item-group .item-name').forEach(el => updateHeader(el)); saveToLocal(); } }
 
     function calculate() {
         saveToLocal();
         const items = JSON.parse(localStorage.getItem('settlementData') || "[]");
         const invalid = items.find(i => !i.payer || i.amount === "0" || !i.amount);
-        if (invalid) return alert("입력이 부족한 차수가 있습니다.");
+        if (invalid) return alert("결제 정보가 부족한 차수가 있습니다. 확인해주세요!");
+
         let total = 0, teamPaid = { A: 0, B: 0, C: 0 }, teamSpent = { A: 0, B: 0, C: 0 }, indC = { 지훈: 0, 은혜: 0 };
         let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
+
         items.forEach((item, idx) => {
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
-            tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
+            const displayName = item.name || (idx + 1) + "차";
+            tableHtml += `<tr><td>${displayName}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
+
             if(item.payer.includes('A팀')) teamPaid.A += amt;
             else if(item.payer.includes('B팀')) teamPaid.B += amt;
-            else { teamPaid.C += amt; if(item.payer === '지훈') indC.지훈 += amt; if(item.payer === '은혜') indC.은혜 += amt; }
+            else { 
+                teamPaid.C += amt; 
+                if(item.payer === '지훈') indC.지훈 += amt; 
+                if(item.payer === '은혜') indC.은혜 += amt; 
+            }
+
             const active = Object.keys(item.teams).filter(k => item.teams[k]);
             active.forEach(t => teamSpent[t] += (amt / active.length));
         });
+
         tableHtml += `</table>`;
+
         let diff = [{n:teamNames.A, v:teamPaid.A-teamSpent.A}, {n:teamNames.B, v:teamPaid.B-teamSpent.B}, {n:teamNames.C, v:teamPaid.C-teamSpent.C}];
         let msg = "";
         diff.filter(d => d.v < 0).forEach(d => {
@@ -218,10 +211,28 @@
                 debt -= p; c.v -= p;
             });
         });
+
         const toSendC = (teamSpent.C/2) - indC.은혜;
-        document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.9rem; margin-bottom:5px; border-bottom:1px solid #555; padding-bottom:5px;">📍 상세 지출</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin-bottom:20px; color:#f39c12;">총 합계: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.9rem; margin-bottom:5px;">📍 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:10px;">${msg || "모두 정산되었습니다."}</div>`;
-        document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #666; margin:15px 0;"><div style="font-size:0.8rem; color:#bbb;">[C팀 내부 정산]</div>${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span>`;
+        
+        document.getElementById('reportHeader').innerHTML = `
+            <div style="font-size:0.9rem; margin-bottom:5px; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역 상세</div>
+            ${tableHtml}
+            <div style="text-align:right; font-weight:bold; margin-bottom:20px; color:#f39c12;">총액: ${total.toLocaleString()}원</div>
+        `;
+        
+        document.getElementById('reportGuide').innerHTML = `
+            <div style="font-size:0.9rem; margin-bottom:5px;">📍 최종 송금 가이드</div>
+            <div style="background:#3d4446; padding:15px; border-radius:10px;">
+                ${msg || "모두 정산되었습니다."}
+            </div>
+        `;
+
+        document.getElementById('privateSection').innerHTML = `
+            <hr style="border:0; border-top:1px dashed #666; margin:15px 0;">
+            <div style="font-size:0.8rem; color:#bbb;">[C팀 내부 정산]</div>
+            ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span>
+        `;
+
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
         window.scrollTo(0, document.body.scrollHeight);
@@ -230,7 +241,12 @@
     function saveAsImage() {
         const privateSection = document.getElementById('privateSection');
         privateSection.style.display = 'none';
-        html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f8f9fa", scale: 2 }).then(canvas => {
+        
+        const area = document.getElementById('captureArea');
+        html2canvas(area, {
+            backgroundColor: "#f8f9fa",
+            scale: 2
+        }).then(canvas => {
             const link = document.createElement('a');
             link.download = `정산리포트_${new Date().toLocaleDateString()}.png`;
             link.href = canvas.toDataURL();
