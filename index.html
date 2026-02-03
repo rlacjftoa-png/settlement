@@ -6,8 +6,8 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v11] Detailed Breakdown for Option B */
-        :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
+        /* [Update: 2026-02-03-v12] Block Button Design Style */
+        :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
@@ -17,19 +17,63 @@
         .item-body { padding: 15px; border-top: 1px solid #eee; background: #fdfdfd; }
         .collapsed .item-body { display: none; }
         .remove-btn { position: absolute; right: 8px; top: 8px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
-        input[type="text"] { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; }
-        .label-text { font-size: 0.75rem; font-weight: bold; margin-top: 8px; display: block; color: #777; }
-        .flex-group { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
-        .radio-item, .check-item { font-size: 0.75rem; background: #fff; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 15px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-        .radio-item input, .check-item input { margin: 0; width: 13px; height: 13px; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; }
+        .label-text { font-size: 0.8rem; font-weight: bold; margin-top: 12px; margin-bottom: 6px; display: block; color: #555; }
+        
+        /* 버튼 그룹 레이아웃 */
+        .flex-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+        /* [수정] 라디오/체크박스 숨기고 버튼 스타일로 변경 */
+        .radio-item, .check-item { 
+            flex: 1; /* 너비 균등 분배 */
+            min-width: 70px; /* 너무 작아지지 않게 */
+            font-size: 0.8rem; 
+            background: #fff; 
+            border: 1px solid var(--gray-border); 
+            padding: 12px 5px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center;
+            transition: all 0.2s ease;
+            color: #888;
+            font-weight: 500;
+        }
+
+        /* 실제 input 숨김 */
+        .radio-item input, .check-item input { display: none; }
+
+        /* [수정] 선택되었을 때 스타일 (배경색 변경) */
+        /* 결제자 선택 (라디오) */
+        .radio-item:has(input:checked) {
+            background: var(--dark);
+            color: #fff;
+            border-color: var(--dark);
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(45, 52, 54, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* 팀 선택 (체크박스) */
+        .check-item:has(input:checked) {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2);
+            transform: translateY(-1px);
+        }
+
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .save-btn { background: var(--success); color: white; margin-top: 10px; padding: 10px; font-size: 0.85rem; }
+        .save-btn { background: var(--success); color: white; margin-top: 15px; padding: 12px; font-size: 0.9rem; }
         .add-btn { background: #495057; color: white; margin-bottom: 8px; }
         .clear-btn { background: #f1f3f5; color: #adb5bd; margin-bottom: 8px; padding: 10px; font-size: 0.8rem; }
-        .calc-btn { background: var(--primary); color: white; }
+        .calc-btn { background: var(--primary); color: white; margin-top: 5px; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); }
         .image-btn { background: #6c5ce7; color: white; margin-top: 15px; }
 
-        /* 리포트 레이아웃 최적화 */
+        /* 리포트 레이아웃 */
         .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 15px; }
         .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.75rem; color: #ddd; }
         .report-table th { border-bottom: 1px solid #555; padding: 5px; text-align: left; }
@@ -44,8 +88,6 @@
         .guide-team { font-size: 0.85rem; margin-bottom: 4px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
         .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
-
-        /* 세부 내역 스타일 */
         .detail-breakdown { font-size: 0.75rem; color: #bbb; margin-top: 5px; padding-left: 10px; border-left: 2px solid #555; }
     </style>
 </head>
@@ -240,7 +282,7 @@
         // --- 내부 정산 ---
         const toSendC = (teamSpent.C / 2) - indC.은혜; 
         
-        // --- 옵션 B 상세 내역 생성 ---
+        // --- 옵션 B 상세 내역 ---
         const takeE = realPaid.은혜 - (teamSpent.C / 2);
         const takeJ = realPaid.지훈 - (teamSpent.C / 2);
         const netFlowC = teamPaid.C - teamSpent.C;
@@ -248,15 +290,11 @@
             ? `외부에서 <span class="text-green">${Math.round(netFlowC).toLocaleString()}원</span> 받음` 
             : `외부로 <span class="text-red">${Math.round(Math.abs(netFlowC)).toLocaleString()}원</span> 보냄`;
 
-        // 내역 표시 함수 (돈의 출처를 명시)
         function getBreakdown(myTake, otherTake, netFlow) {
-            if (myTake <= 0) return ""; // 돈을 내는 사람은 내역 불필요 (그냥 내면 됨)
+            if (myTake <= 0) return ""; 
             
-            // 돈을 받는 경우 (예: 지훈) -> 누구한테 받는지 표시
             let sources = [];
-            // 1. 파트너가 돈을 내야 하는 경우 (otherTake가 음수)
             if (otherTake < 0) sources.push(`파트너에게 ${Math.round(Math.abs(otherTake)).toLocaleString()}원`);
-            // 2. 외부에서 돈이 들어오는 경우 (netFlow가 양수)
             if (netFlow > 0) sources.push(`외부(A/B팀)에서 ${Math.round(netFlow).toLocaleString()}원`);
             
             if (sources.length === 0) return "";
