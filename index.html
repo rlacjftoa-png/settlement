@@ -45,6 +45,11 @@
         .guide-team { font-size: 0.9rem; margin-bottom: 6px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 8px; }
         .send-label { font-size: 0.7rem; color: #ccc; background: #444; padding: 3px 8px; border-radius: 5px; }
+
+        /* 팝업 오버레이 스타일 */
+        #imagePopup { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        #imagePopup img { max-width: 90%; max-height: 80%; border-radius: 8px; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        #imagePopup .close-pop { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -70,6 +75,13 @@
     <div id="actionButtons" style="display:none;">
         <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 생성</button>
     </div>
+</div>
+
+<div id="imagePopup">
+    <span class="close-pop" onclick="this.parentElement.style.display='none'">&times;</span>
+    <p style="color:white; font-size:0.9rem; margin-bottom:15px;">이미지를 길게 눌러 저장하거나 화면을 캡처하세요.</p>
+    <img id="popImg" src="" alt="정산 리포트">
+    <button onclick="document.getElementById('imagePopup').style.display='none'" style="margin-top:20px; width:auto; padding:10px 30px; background:#444; color:white;">닫기</button>
 </div>
 
 <script>
@@ -236,45 +248,30 @@
 
     async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
-        const actionButtons = document.getElementById('actionButtons');
         
         try {
             const canvas = await html2canvas(captureArea, { 
-                backgroundColor: "#f2f4f7", 
-                scale: 2,
+                backgroundColor: "#2d3436", // 리포트 배경색에 맞춰 어둡게 설정
+                scale: 3, // 화질을 더 높임
                 useCORS: true,
-                // 이 옵션이 privateSection의 태그를 인식해 이미지에서 제외합니다.
                 ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
             });
 
             const imageData = canvas.toDataURL("image/png");
 
-            const existingTemp = document.querySelectorAll('.temp-save-area');
-            existingTemp.forEach(el => el.remove());
-
-            const guideBox = document.createElement('div');
-            guideBox.className = 'temp-save-area';
-            guideBox.innerHTML = `
-                <div style="background:#fff3cd; color:#856404; padding:12px; border-radius:12px; margin-top:20px; font-size:0.85rem; text-align:center; border:1px solid #ffeeba; line-height:1.5;">
-                    📍 <strong>저장 안내</strong> 📍<br>
-                    공통 정산 내역만 이미지로 생성되었습니다.<br>
-                    <strong>아래 이미지를 1초간 꾹~ 눌러서</strong><br>
-                    [이미지 다운로드]를 선택해 주세요!
-                </div>
-            `;
-            actionButtons.appendChild(guideBox);
-
-            const img = new Image();
-            img.className = 'temp-save-area';
-            img.src = imageData;
-            img.style.cssText = "width:100%; margin-top:12px; border-radius:16px; border:3px solid var(--primary); box-shadow: 0 6px 20px rgba(0,0,0,0.15);";
+            // 팝업으로 이미지를 띄움
+            const pop = document.getElementById('imagePopup');
+            const popImg = document.getElementById('popImg');
             
-            actionButtons.appendChild(img);
-            img.scrollIntoView({ behavior: 'smooth' });
+            popImg.src = imageData;
+            pop.style.display = 'flex';
+
+            // 만약 꾹 눌러도 안 된다면 화면 캡처라도 편하게 할 수 있도록 가이드
+            console.log("이미지가 팝업으로 생성되었습니다.");
 
         } catch (e) {
             console.error(e);
-            alert("이미지 생성 실패. 화면 캡처를 이용해 주세요.");
+            alert("이미지 생성 중 오류가 발생했습니다.");
         }
     }
 </script>
