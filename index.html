@@ -3,166 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium 팀 정산</title>
+    <title>Premium 팀 정산 v8</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary: #5c67f2;
-            --primary-dark: #4a54d1;
-            --secondary: #eef2ff;
             --bg: #f8f9fd;
             --card-bg: #ffffff;
             --text-main: #2d3436;
             --text-sub: #636e72;
             --danger: #ff7675;
-            --success: #00b894;
             --accent: #fdcb6e;
         }
 
         body { 
             font-family: 'Pretendard', -apple-system, sans-serif; 
-            background: var(--bg); 
-            padding: 20px 15px; 
-            margin: 0; 
-            color: var(--text-main);
-            line-height: 1.5;
+            background: var(--bg); padding: 20px 15px; margin: 0; 
+            color: var(--text-main); -webkit-font-smoothing: antialiased;
         }
 
         .container { max-width: 480px; margin: 0 auto; }
 
-        /* Card Style */
         .card { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 24px; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.04); 
-            margin-bottom: 20px; 
-            border: 1px solid rgba(0,0,0,0.02);
+            background: var(--card-bg); padding: 20px; border-radius: 24px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04); margin-bottom: 20px;
         }
 
-        h2 { 
-            margin: 0 0 20px 0; 
-            font-size: 1.25rem; 
-            font-weight: 800;
-            text-align: center; 
-            letter-spacing: -0.5px;
+        h2 { margin: 0 0 20px 0; font-size: 1.25rem; text-align: center; font-weight: 800; }
+
+        /* 입력창 버그 수정 */
+        .input-field {
+            width: 100%; 
+            box-sizing: border-box; /* 너비 계산에 패딩 포함 */
+            padding: 14px 15px; 
+            margin: 8px 0; 
+            border: 1.5px solid #edf2f7; 
+            border-radius: 14px; 
+            font-size: 1rem;
+            display: block;
         }
 
-        /* Item Group */
         .item-group { 
-            border: 1.5px solid #f1f3f5; 
-            border-radius: 18px; 
-            margin-bottom: 12px; 
-            transition: all 0.3s ease;
-            background: #fff;
-            position: relative;
+            border: 1.5px solid #f1f3f5; border-radius: 20px; 
+            margin-bottom: 12px; background: #fff; position: relative; overflow: hidden;
         }
         
-        .item-group:focus-within { border-color: var(--primary); box-shadow: 0 4px 12px rgba(92, 103, 242, 0.1); }
-
-        .item-header { 
-            padding: 16px; 
-            cursor: pointer; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 4px; 
-        }
-
+        .item-header { padding: 18px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
         .title-text { font-size: 1rem; font-weight: 700; color: var(--text-main); }
-        .sub-text { font-size: 0.75rem; color: var(--text-sub); font-weight: 500; }
+        .sub-text { font-size: 0.75rem; color: var(--text-sub); line-height: 1.4; }
 
-        .item-body { padding: 0 16px 16px 16px; border-top: 1px solid #f8f9fa; }
+        .item-body { padding: 0 18px 20px 18px; border-top: 1px solid #f8f9fa; }
         .collapsed .item-body { display: none; }
 
         .remove-btn { 
             position: absolute; right: 12px; top: 12px; 
             background: #fff0f0; color: var(--danger); 
-            width: 28px; height: 28px; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 18px; border: none; z-index: 5;
+            width: 30px; height: 30px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; border: none; z-index: 10;
         }
 
-        /* Input Style */
-        input[type="text"] { 
-            width: 100%; padding: 12px 15px; margin: 8px 0; 
-            border: 1.5px solid #edf2f7; border-radius: 12px; 
-            font-size: 0.95rem; transition: 0.2s;
-            background: #fdfdfd;
-        }
-        input[type="text"]:focus { outline: none; border-color: var(--primary); background: #fff; }
+        .label-text { font-size: 0.85rem; font-weight: 700; margin: 15px 0 8px 2px; display: block; color: var(--text-main); }
 
-        .label-text { font-size: 0.8rem; font-weight: 700; margin: 12px 0 6px 2px; display: block; color: var(--text-sub); }
-
-        /* Chips Style */
-        .flex-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        .radio-item, .check-item { 
+        /* 칩 디자인 개선 */
+        .flex-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip { 
             font-size: 0.8rem; background: #f1f3f5; border: 1.5px solid transparent; 
-            padding: 8px 12px; border-radius: 12px; cursor: pointer; 
-            transition: all 0.2s; font-weight: 500;
+            padding: 10px 14px; border-radius: 12px; cursor: pointer; 
+            transition: 0.2s; font-weight: 500; color: var(--text-sub);
         }
-        .radio-item input, .check-item input { display: none; }
-        .radio-item:has(input:checked), .check-item:has(input:checked) { 
-            background: var(--secondary); border-color: var(--primary); color: var(--primary); 
+        .chip input { display: none; }
+        .chip:has(input:checked) { 
+            background: #eef2ff; border-color: var(--primary); color: var(--primary); font-weight: 700;
         }
 
-        /* Buttons */
-        button { 
-            width: 100%; padding: 16px; border: none; border-radius: 16px; 
-            font-weight: 700; cursor: pointer; font-size: 1rem; transition: 0.2s;
-        }
-        button:active { transform: scale(0.98); }
-
-        .add-btn { background: #f1f3f5; color: var(--text-main); margin-bottom: 10px; }
+        button { width: 100%; padding: 16px; border: none; border-radius: 18px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .add-btn { background: #f1f3f5; color: var(--text-main); margin-bottom: 12px; }
         .calc-btn { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(92, 103, 242, 0.3); }
-        .save-btn { background: var(--primary); color: white; margin-top: 15px; padding: 12px; font-size: 0.9rem; }
-        .clear-btn { background: transparent; color: var(--text-sub); font-size: 0.8rem; text-decoration: underline; margin-top: 5px; }
-        .image-btn { background: var(--text-main); color: white; margin-top: 15px; }
+        .save-btn { background: var(--primary); color: white; margin-top: 20px; }
+        .clear-btn { background: transparent; color: var(--text-sub); font-size: 0.8rem; text-decoration: underline; margin-top: 10px; }
 
-        /* Report Style */
+        /* 결과 창 */
         .result-box { background: #1a1c1e; color: #fff; padding: 25px; border-radius: 28px; display: none; margin-top: 25px; }
-        .report-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem; }
-        .report-table th { color: #888; border-bottom: 1px solid #333; padding: 8px; text-align: left; }
-        .report-table td { padding: 10px 8px; border-bottom: 1px solid #2a2d30; }
-        
         .highlight { color: var(--accent); font-weight: 800; }
-        .guide-container { 
-            background: rgba(255,255,255,0.05); padding: 15px; 
-            border-radius: 16px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);
-        }
-        .guide-team { font-size: 0.9rem; margin-bottom: 6px; display: block; color: var(--accent); font-weight: 700; }
-        .send-label { font-size: 0.7rem; color: #aaa; text-transform: uppercase; margin-right: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h2>🧾 Settlement</h2>
+        <h2>🧾 Team Settlement</h2>
         <div id="itemList"></div>
-        <button class="add-btn" onclick="addNewItem()">+ 차수 추가하기</button>
+        <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
         <button class="calc-btn" onclick="calculate()">🚀 정산 결과 확인</button>
-        <button class="clear-btn" onclick="clearAllItems()">데이터 초기화</button>
+        <button class="clear-btn" onclick="clearAllItems()">모든 데이터 초기화</button>
     </div>
 
     <div id="captureArea">
         <div id="result" class="result-box">
-            <h3 style="margin-top:0; text-align:center; font-size:1.2rem;">📊 정산 리포트</h3>
+            <h3 style="text-align:center; margin-bottom:20px;">📊 정산 리포트</h3>
             <div id="reportHeader"></div>
             <div id="reportGuide" style="margin-top:20px;"></div>
             <div id="privateSection"></div>
         </div>
     </div>
     
-    <div id="actionButtons" style="display:none; padding: 0 10px;">
-        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 저장하기</button>
+    <div id="actionButtons" style="display:none;">
+        <button style="background:var(--text-main); color:white; margin-top:15px;" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
     </div>
 </div>
 
 <script>
-    const teamNames = { A: "A팀(의성,지혜)", B: "B팀(현수,미영)", C: "C팀(지훈,은혜)" };
+    // 팀 데이터 정의
+    const teams = {
+        A: { name: "A팀", members: "의성,지혜" },
+        B: { name: "B팀", members: "현수,미영" },
+        C: { name: "C팀", members: "지훈,은혜" }
+    };
+
+    const payers = [
+        `${teams.A.name}(${teams.A.members})`,
+        `${teams.B.name}(${teams.B.members})`,
+        "지훈", "은혜"
+    ];
 
     window.onload = () => {
-        const saved = localStorage.getItem('settlementData');
+        const saved = localStorage.getItem('settlementDataV8');
         if (saved) JSON.parse(saved).forEach(data => renderItem(data));
         else addNewItem();
     }
@@ -180,23 +145,26 @@
                 <div class="sub-text"></div>
             </div>
             <div class="item-body">
-                <input type="text" placeholder="항목명 (예: 1차 점심)" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
-                <input type="text" placeholder="금액 입력" class="item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
+                <input type="text" placeholder="항목명 (예: 1차 점심)" class="input-field item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
+                <input type="text" placeholder="금액 입력" class="input-field item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
                 
-                <span class="label-text">결제자</span>
+                <span class="label-text">💳 결제자 선택</span>
                 <div class="flex-group">
-                    ${[teamNames.A, teamNames.B, '지훈', '은혜'].map(p => `
-                        <label class="radio-item"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
+                    ${payers.map(p => `
+                        <label class="chip"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
                     `).join('')}
                 </div>
                 
-                <span class="label-text">참여 팀</span>
+                <span class="label-text">👥 참여 팀 (이름 포함)</span>
                 <div class="flex-group">
-                    <label class="check-item"><input type="checkbox" class="team-a" ${data?.teams?.A !== false ? 'checked' : ''} onchange="updateHeader(this)">A팀</label>
-                    <label class="check-item"><input type="checkbox" class="team-b" ${data?.teams?.B !== false ? 'checked' : ''} onchange="updateHeader(this)">B팀</label>
-                    <label class="check-item"><input type="checkbox" class="team-c" ${data?.teams?.C !== false ? 'checked' : ''} onchange="updateHeader(this)">C팀</label>
+                    ${Object.keys(teams).map(key => `
+                        <label class="chip">
+                            <input type="checkbox" class="team-${key.toLowerCase()}" ${data?.teams?.[key] !== false ? 'checked' : ''} onchange="updateHeader(this)">
+                            ${teams[key].name}(${teams[key].members})
+                        </label>
+                    `).join('')}
                 </div>
-                <button class="save-btn" onclick="saveAndCollapse(this)">확인</button>
+                <button class="save-btn" onclick="saveAndCollapse(this)">입력 완료 및 접기</button>
             </div>
         `;
         document.getElementById('itemList').appendChild(div);
@@ -205,11 +173,18 @@
 
     function updateHeader(el) {
         const g = el.closest('.item-group');
-        const name = g.querySelector('.item-name').value || "정산 항목";
+        const name = g.querySelector('.item-name').value || "항목명 미입력";
         const amt = g.querySelector('.item-amount').value || "0";
-        const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미지정";
+        const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "결제자 미지정";
+        
+        // 참여 팀 요약 텍스트 생성
+        const activeTeams = [];
+        if(g.querySelector('.team-a').checked) activeTeams.push(`${teams.A.name}(${teams.A.members})`);
+        if(g.querySelector('.team-b').checked) activeTeams.push(`${teams.B.name}(${teams.B.members})`);
+        if(g.querySelector('.team-c').checked) activeTeams.push(`${teams.C.name}(${teams.C.members})`);
+        
         g.querySelector('.title-text').innerText = `${name} (${amt}원)`;
-        g.querySelector('.sub-text').innerText = `결제: ${payer}`;
+        g.querySelector('.sub-text').innerHTML = `<b>결제:</b> ${payer}<br><b>참여:</b> ${activeTeams.join(', ') || '없음'}`;
         saveToLocal();
     }
 
@@ -218,8 +193,6 @@
         obj.value = v.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
-    function addNewItem() { renderItem(); window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'}); }
-
     function saveToLocal() {
         const items = Array.from(document.querySelectorAll('.item-group')).map(g => {
             const id = g.getAttribute('data-id');
@@ -227,53 +200,75 @@
                 name: g.querySelector('.item-name').value,
                 amount: g.querySelector('.item-amount').value,
                 payer: g.querySelector(`input[name="payer_${id}"]:checked`)?.value || "",
-                teams: { A: g.querySelector('.team-a').checked, B: g.querySelector('.team-b').checked, C: g.querySelector('.team-c').checked },
+                teams: { 
+                    A: g.querySelector('.team-a').checked, 
+                    B: g.querySelector('.team-b').checked, 
+                    C: g.querySelector('.team-c').checked 
+                },
                 collapsed: g.classList.contains('collapsed')
             };
         });
-        localStorage.setItem('settlementData', JSON.stringify(items));
+        localStorage.setItem('settlementDataV8', JSON.stringify(items));
     }
 
     function toggleItem(h) { h.closest('.item-group').classList.toggle('collapsed'); }
     function saveAndCollapse(b) { b.closest('.item-group').classList.add('collapsed'); saveToLocal(); }
-    function removeItem(b) { if(confirm("삭제할까요?")) { b.closest('.item-group').remove(); saveToLocal(); } }
-    function clearAllItems() { if(confirm("전체 데이터를 삭제하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+    function removeItem(b) { if(confirm("삭제하시겠습니까?")) { b.closest('.item-group').remove(); saveToLocal(); } }
+    function clearAllItems() { if(confirm("모든 데이터를 초기화하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+
+    function addNewItem() { renderItem(); window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'}); }
 
     function calculate() {
         saveToLocal();
-        const items = JSON.parse(localStorage.getItem('settlementData') || "[]");
-        if(items.some(i => !i.payer || !i.amount || i.amount === "0")) return alert("입력되지 않은 정보가 있습니다.");
+        const items = JSON.parse(localStorage.getItem('settlementDataV8') || "[]");
+        if(items.some(i => !i.payer || !i.amount || i.amount === "0")) return alert("결제자 또는 금액이 입력되지 않은 항목이 있습니다.");
 
         let total = 0, teamPaid = {A:0, B:0, C:0}, teamSpent = {A:0, B:0, C:0}, indC = {지훈:0, 은혜:0};
-        let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제</th><th>금액</th></tr>`;
+        let tableHtml = `<table style="width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px;">
+                        <tr style="border-bottom:1px solid #444; color:#888;"><th align="left">항목</th><th align="left">결제</th><th align="right">금액</th></tr>`;
 
         items.forEach((item, idx) => {
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
-            tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
+            tableHtml += `<tr style="border-bottom:1px solid #2a2d30;"><td style="padding:10px 0;">${item.name || (idx+1)+'차'}</td><td>${item.payer.split('(')[0]}</td><td align="right">${amt.toLocaleString()}원</td></tr>`;
+            
             if(item.payer.includes('A팀')) teamPaid.A += amt;
             else if(item.payer.includes('B팀')) teamPaid.B += amt;
-            else { teamPaid.C += amt; if(item.payer==='지훈') indC.지훈+=amt; if(item.payer==='은혜') indC.은혜+=amt; }
+            else { 
+                teamPaid.C += amt; 
+                if(item.payer === '지훈') indC.지훈 += amt; 
+                if(item.payer === '은혜') indC.은혜 += amt; 
+            }
+
             const active = Object.keys(item.teams).filter(k => item.teams[k]);
             active.forEach(t => teamSpent[t] += (amt / active.length));
         });
 
-        let diff = [{n:teamNames.A, v:teamPaid.A-teamSpent.A}, {n:teamNames.B, v:teamPaid.B-teamSpent.B}, {n:teamNames.C, v:teamPaid.C-teamSpent.C}];
+        let diff = [
+            {n: `${teams.A.name}(${teams.A.members})`, v: teamPaid.A-teamSpent.A},
+            {n: `${teams.B.name}(${teams.B.members})`, v: teamPaid.B-teamSpent.B},
+            {n: `${teams.C.name}(${teams.C.members})`, v: teamPaid.C-teamSpent.C}
+        ];
+
         let msg = "";
         diff.filter(d => d.v < 0).forEach(d => {
             let debt = Math.abs(d.v);
             diff.filter(c => c.v > 0).forEach(c => {
                 if(debt <= 0 || c.v <= 0) return;
                 let p = Math.min(debt, c.v);
-                msg += `<div class="guide-container"><span class="guide-team">💰 ${d.n} → ${c.n}</span><div><span class="send-label">금액</span><span class="highlight">${Math.round(p).toLocaleString()}원</span></div></div>`;
+                msg += `<div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:16px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.1);">
+                            <span style="color:var(--accent); font-weight:700; display:block; margin-bottom:5px;">💰 ${d.n} → ${c.n}</span>
+                            <span style="font-size:0.9rem;">보낼 금액: <b class="highlight">${Math.round(p).toLocaleString()}원</b></span>
+                        </div>`;
                 debt -= p; c.v -= p;
             });
         });
 
-        document.getElementById('reportHeader').innerHTML = `<div style="color:#888; font-size:0.8rem; margin-bottom:5px;">DETAILS</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin-top:15px; color:var(--accent); font-size:1.1rem;">Total: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="color:#888; font-size:0.8rem; margin-bottom:10px;">GUIDE</div>${msg || "정산할 내역이 없습니다."}`;
+        document.getElementById('reportHeader').innerHTML = tableHtml + `<div style="text-align:right; font-weight:bold; margin-top:15px; color:var(--accent); font-size:1.1rem;">총 지출액: ${total.toLocaleString()}원</div>`;
+        document.getElementById('reportGuide').innerHTML = `<div style="color:#888; font-size:0.8rem; margin-bottom:10px;">FINAL GUIDE</div>${msg || "정산 내역이 완벽합니다!"}`;
+        
         const toSendC = (teamSpent.C/2) - indC.은혜;
-        document.getElementById('privateSection').innerHTML = `<div style="margin-top:20px; padding-top:15px; border-top:1px dashed #444; font-size:0.8rem; color:#aaa;">[C팀 내부] ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>`;
+        document.getElementById('privateSection').innerHTML = `<div style="margin-top:20px; padding-top:15px; border-top:1px dashed #444; font-size:0.8rem; color:#aaa;">[C팀 내부 정산] ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>`;
         
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
@@ -283,9 +278,9 @@
     function saveAsImage() {
         const ps = document.getElementById('privateSection');
         ps.style.display = 'none';
-        html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f8f9fd", scale: 3, borderRadius: 28 }).then(canvas => {
+        html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f8f9fd", scale: 2 }).then(canvas => {
             const link = document.createElement('a');
-            link.download = `Settlement_${new Date().getTime()}.png`;
+            link.download = `Settlement_Report.png`;
             link.href = canvas.toDataURL();
             link.click();
             ps.style.display = 'block';
