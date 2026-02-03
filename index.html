@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>팀 정산 매니저</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
@@ -45,12 +47,6 @@
         .guide-team { font-size: 0.9rem; margin-bottom: 6px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 8px; }
         .send-label { font-size: 0.7rem; color: #ccc; background: #444; padding: 3px 8px; border-radius: 5px; }
-
-        /* 이미지 오버레이 팝업 스타일 */
-        #imgOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; flex-direction: column; align-items: center; justify-content: center; }
-        #imgOverlay img { max-width: 90%; max-height: 70%; border: 2px solid #fff; border-radius: 8px; }
-        .overlay-msg { color: #fff; text-align: center; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.5; }
-        .close-overlay { margin-top: 30px; background: #fff; color: #000; width: 120px; padding: 10px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -74,18 +70,8 @@
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" id="saveBtn" onclick="openImagePopup()">🖼️ 리포트 이미지 저장</button>
+        <button class="image-btn" id="saveBtn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
     </div>
-</div>
-
-<div id="imgOverlay">
-    <div class="overlay-msg">
-        📍 <b>저장 가이드</b> 📍<br>
-        아래 이미지를 <b>1초간 꾹~ 누르신 후</b><br>
-        [이미지 다운로드] 또는 [사진 저장]을 누르세요.
-    </div>
-    <img id="targetImg" src="" alt="정산리포트">
-    <button class="close-overlay" onclick="closeOverlay()">닫기</button>
 </div>
 
 <script>
@@ -250,12 +236,12 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    // [최종 해결책] 이미지 팝업 열기
-    async function openImagePopup() {
+    // PWA 방식의 표준 이미지 저장 함수
+    async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
         const btn = document.getElementById('saveBtn');
         
-        btn.innerText = "⏳ 이미지 생성 중...";
+        btn.innerText = "⏳ 이미지 저장 중...";
         btn.disabled = true;
 
         try {
@@ -266,22 +252,29 @@
                 ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
             });
 
-            const imageData = canvas.toDataURL("image/png");
+            // JPG 형식으로 변환하여 저장 (갤러리 호환성 최적화)
+            const imageData = canvas.toDataURL("image/jpeg", 0.9);
+            const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+            const fileName = `settlement_${dateStr}.jpg`;
+
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             
-            // 팝업 레이어 표시 및 이미지 삽입
-            document.getElementById('targetImg').src = imageData;
-            document.getElementById('imgOverlay').style.display = 'flex';
+            // 모바일 사용자를 위한 추가 안내
+            setTimeout(() => {
+                alert("이미지 저장이 완료되었습니다.\n갤러리 또는 다운로드 폴더를 확인해주세요.");
+            }, 500);
 
         } catch (e) {
-            alert("이미지 생성에 실패했습니다.");
+            alert("이미지 저장 실패. 화면 캡처 기능을 이용해 주세요.");
         } finally {
             btn.innerText = "🖼️ 리포트 이미지 저장";
             btn.disabled = false;
         }
-    }
-
-    function closeOverlay() {
-        document.getElementById('imgOverlay').style.display = 'none';
     }
 </script>
 </body>
