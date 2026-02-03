@@ -6,23 +6,50 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v13] Unified Color & Pop Animation */
+        /* [Update: 2026-02-03-v14] Collapsed Item Visual Indicator */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #f1f3f5; padding-bottom: 10px; text-align: center; }
-        .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; }
-        .item-header { padding: 10px 45px 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+        
+        /* 기본 아이템 그룹 스타일 */
+        .item-group { 
+            border: 1px solid #eee; 
+            border-radius: 12px; 
+            margin-bottom: 10px; 
+            overflow: hidden; 
+            background: #fff; 
+            position: relative; 
+            transition: all 0.3s ease; /* 부드러운 전환 효과 */
+        }
+
+        /* [핵심] 접혔을 때(완료된 상태) 스타일 */
+        .item-group.collapsed {
+            border-left: 6px solid var(--success); /* 왼쪽에 초록색 띠 표시 */
+            background: #fafbfc; /* 배경을 살짝 회색으로 변경하여 완료됨을 표시 */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 접혔을 때 제목 앞에 체크 표시 추가 */
+        .item-group.collapsed .title-text::before {
+            content: "✔";
+            color: var(--success);
+            margin-right: 6px;
+            font-weight: bold;
+        }
+
+        .item-header { padding: 12px 45px 12px 15px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
         .item-body { padding: 15px; border-top: 1px solid #eee; background: #fdfdfd; }
         .collapsed .item-body { display: none; }
-        .remove-btn { position: absolute; right: 8px; top: 8px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
+        
+        .remove-btn { position: absolute; right: 8px; top: 10px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
         input[type="text"] { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 0.95rem; }
         .label-text { font-size: 0.8rem; font-weight: bold; margin-top: 12px; margin-bottom: 6px; display: block; color: #555; }
         
         .flex-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
 
-        /* [수정] 버튼 스타일 정의 */
+        /* 버튼 스타일 */
         .radio-item, .check-item { 
             flex: 1; 
             min-width: 70px; 
@@ -36,24 +63,22 @@
             align-items: center; 
             justify-content: center; 
             text-align: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 부드러운 전환 */
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             color: #888;
             font-weight: 500;
         }
 
         .radio-item input, .check-item input { display: none; }
 
-        /* [핵심] 선택 시 스타일 통일 (파란색) & 애니메이션 적용 */
         .radio-item:has(input:checked), .check-item:has(input:checked) {
-            background: var(--primary); /* 색상 통일 */
+            background: var(--primary); 
             color: #fff;
             border-color: var(--primary);
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
-            transform: scale(1.02); /* 살짝 커짐 */
+            transform: scale(1.02);
         }
 
-        /* [핵심] 선택 시 체크 아이콘(✔) 등장 */
         .radio-item:has(input:checked)::before, .check-item:has(input:checked)::before {
             content: '✔';
             margin-right: 4px;
