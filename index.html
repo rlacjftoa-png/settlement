@@ -234,12 +234,11 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    // 권한 설정 후 작동할 이미지 저장 함수
     async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
         const btn = document.getElementById('saveBtn');
         
-        btn.innerText = "⏳ 저장 중...";
+        btn.innerText = "⏳ 파일 생성 중...";
         btn.disabled = true;
 
         try {
@@ -251,18 +250,32 @@
             });
 
             const imageData = canvas.toDataURL("image/png");
-            const blob = await (await fetch(imageData)).blob();
             
-            // 안드로이드 표준 다운로드 호출
+            // 데이터 형태를 Blob으로 변환하여 시스템이 파일로 인식하게 함
+            const byteString = atob(imageData.split(',')[1]);
+            const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], {type: mimeString});
+
+            // 파일명 날짜 조합
+            const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+            const fileName = `settlement_${dateStr}.png`;
+
             const link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.download = `정산리포트_${new Date().getTime()}.png`;
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            alert("다운로드 창이 뜨면 이름을 확인하고 'YES'를 눌러주세요!\n저장 후 갤러리에 안 보인다면 'Download' 폴더를 확인해 보세요.");
 
         } catch (e) {
-            alert("이미지 저장 실패. 권한 허용 여부를 다시 확인해 주세요.");
+            alert("이미지 저장 실패. 권한 허용을 다시 확인해 주세요.");
         } finally {
             btn.innerText = "🖼️ 리포트 이미지 저장";
             btn.disabled = false;
