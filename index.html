@@ -6,7 +6,7 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v10] Fix Logic Error in Option B Label */
+        /* [Update: 2026-02-03-v11] Detailed Breakdown for Option B */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -44,6 +44,9 @@
         .guide-team { font-size: 0.85rem; margin-bottom: 4px; display: block; color: #f39c12; font-weight: bold; }
         .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
         .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
+
+        /* 세부 내역 스타일 */
+        .detail-breakdown { font-size: 0.75rem; color: #bbb; margin-top: 5px; padding-left: 10px; border-left: 2px solid #555; }
     </style>
 </head>
 <body>
@@ -234,25 +237,38 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
         
-        // --- 내부 정산 (차액 계산) ---
+        // --- 내부 정산 ---
         const toSendC = (teamSpent.C / 2) - indC.은혜; 
         
-        // --- 옵션 B 표시 로직 (마이너스 제거 & 문구 수정) ---
+        // --- 옵션 B 상세 내역 생성 ---
         const takeE = realPaid.은혜 - (teamSpent.C / 2);
         const takeJ = realPaid.지훈 - (teamSpent.C / 2);
-        
-        // [수정 핵심] C팀이 외부로부터 실제로 받는(혹은 줘야하는) 순수 차액 계산
-        // 공식: C팀이 낸 돈 - C팀이 쓴 돈
         const netFlowC = teamPaid.C - teamSpent.C;
         const flowText = netFlowC >= 0 
             ? `외부에서 <span class="text-green">${Math.round(netFlowC).toLocaleString()}원</span> 받음` 
-            : `외부로 <span class="text-red">${Math.round(Math.abs(netFlowC)).toLocaleString()}원</span> 더 보냄`;
+            : `외부로 <span class="text-red">${Math.round(Math.abs(netFlowC)).toLocaleString()}원</span> 보냄`;
 
-        function getLabelAndValue(name, val) {
+        // 내역 표시 함수 (돈의 출처를 명시)
+        function getBreakdown(myTake, otherTake, netFlow) {
+            if (myTake <= 0) return ""; // 돈을 내는 사람은 내역 불필요 (그냥 내면 됨)
+            
+            // 돈을 받는 경우 (예: 지훈) -> 누구한테 받는지 표시
+            let sources = [];
+            // 1. 파트너가 돈을 내야 하는 경우 (otherTake가 음수)
+            if (otherTake < 0) sources.push(`파트너에게 ${Math.round(Math.abs(otherTake)).toLocaleString()}원`);
+            // 2. 외부에서 돈이 들어오는 경우 (netFlow가 양수)
+            if (netFlow > 0) sources.push(`외부(A/B팀)에서 ${Math.round(netFlow).toLocaleString()}원`);
+            
+            if (sources.length === 0) return "";
+            return `<div class="detail-breakdown">└ (출처: ${sources.join(' + ')})</div>`;
+        }
+
+        function getLabelAndValue(name, val, otherVal) {
+            const breakdown = getBreakdown(val, otherVal, netFlowC);
             if (val >= 0) {
-                return `<span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span>`;
+                return `<div><span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span></div>${breakdown}`;
             } else {
-                return `<span>${name} 더 낼 돈:</span> <span class="text-red">${Math.round(Math.abs(val)).toLocaleString()}원</span>`;
+                return `<div><span>${name} 더 낼 돈:</span> <span class="text-red">${Math.round(Math.abs(val)).toLocaleString()}원</span></div>`;
             }
         }
 
@@ -267,12 +283,8 @@
         privateHtml += `<div>
                             <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 B) 외부 정산(${flowText}) 포함 최종 분배</div>
                             <div style="background:#3d4446; padding:10px; border-radius:8px; font-size:0.85rem;">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                                    ${getLabelAndValue('은혜', takeE)}
-                                </div>
-                                <div style="display:flex; justify-content:space-between;">
-                                    ${getLabelAndValue('지훈', takeJ)}
-                                </div>
+                                <div style="margin-bottom:8px;">${getLabelAndValue('은혜', takeE, takeJ)}</div>
+                                <div>${getLabelAndValue('지훈', takeJ, takeE)}</div>
                             </div>
                         </div>`;
 
