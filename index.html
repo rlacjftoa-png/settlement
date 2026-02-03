@@ -6,15 +6,46 @@
     <title>팀 정산 어플 (Pro)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v15] Settings & Dynamic Logic */
+        /* [Update: 2026-02-03-v16] Header Alignment Fix */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
         
-        /* 헤더 영역 (설정 버튼 포함) */
-        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; }
-        .app-title { margin: 0; font-size: 1.3rem; color: #333; font-weight: 800; }
-        .setting-btn { background: #fff; border: 1px solid #ddd; padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-weight: bold; color: #555; }
+        /* [수정됨] 헤더 영역 스타일 개선 */
+        .app-header { 
+            display: flex; 
+            justify-content: space-between; /* 양쪽 끝 정렬 */
+            align-items: center; /* 수직 중앙 정렬 (높이 맞춤) */
+            margin-bottom: 15px; 
+            padding: 10px 5px 0 5px; 
+        }
+        
+        .app-title { 
+            margin: 0; 
+            font-size: 1.25rem; /* 폰트 사이즈 살짝 조정 */
+            color: #333; 
+            font-weight: 800; 
+            white-space: nowrap; /* [중요] 줄바꿈 방지 */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .setting-btn { 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            padding: 8px 14px; 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            font-weight: bold; 
+            color: #555; 
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+        }
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         
@@ -184,7 +215,6 @@
     function removeTeam(idx) {
         if(confirm('이 팀을 삭제하시겠습니까?')) {
             appConfig.teams.splice(idx, 1);
-            // 만약 삭제된 팀이 내 팀이었다면 첫번째 팀을 내 팀으로 설정
             if(!appConfig.teams.some(t=>t.isMyTeam) && appConfig.teams.length > 0) appConfig.teams[0].isMyTeam = true;
             renderSettingsUI();
         }
@@ -207,8 +237,6 @@
     function saveSettings() {
         localStorage.setItem('appConfig', JSON.stringify(appConfig));
         document.getElementById('settingsModal').style.display = 'none';
-        
-        // 설정이 바뀌었으므로 화면 다시 그리기 (기존 입력 데이터 유지를 위해 데이터 저장 후 리로드)
         saveToLocal();
         location.reload(); 
     }
@@ -229,7 +257,6 @@
         div.className = `item-group ${data?.collapsed ? 'collapsed' : ''}`;
         div.setAttribute('data-id', tempId);
         
-        // 결제자 목록 생성: (내 팀이 아닌 팀들) + (내 팀원들)
         const myTeam = appConfig.teams.find(t => t.isMyTeam);
         const otherTeams = appConfig.teams.filter(t => !t.isMyTeam);
         
@@ -241,7 +268,6 @@
             `<label class="radio-item"><input type="radio" name="payer_${tempId}" value="${m}" ${data?.payer === m ? 'checked' : ''} onchange="updateHeader(this)">${m}</label>`
         ).join('');
 
-        // 참여 팀 목록 생성
         const teamCheckHtml = appConfig.teams.map(t => 
             `<label class="check-item"><input type="checkbox" class="team-check" value="${t.id}" data-name="${t.name}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}</label>`
         ).join('');
@@ -279,7 +305,7 @@
         const finalName = nameInput || index + "차";
         
         g.querySelector('.title-text').innerText = `${finalName} (${amt}원)`;
-        g.querySelector('.sub-text').innerHTML = `결제: ${payer} | 참여: ${checkedTeams.length}팀`; // 참여 팀 이름이 길어질 수 있어 개수로 변경
+        g.querySelector('.sub-text').innerHTML = `결제: ${payer} | 참여: ${checkedTeams.length}팀`;
         saveToLocal();
     }
 
@@ -334,11 +360,10 @@
         const invalid = items.find(i => !i.payer || !i.amount || i.amount === "0");
         if (invalid) return alert("결제 정보가 누락된 항목이 있습니다.");
 
-        // --- 1. 동적 변수 초기화 ---
         let total = 0;
-        let teamPaid = {}; // 각 팀이 (대표 또는 팀원이) 결제한 총액
-        let teamSpent = {}; // 각 팀이 소비한 금액 (N빵)
-        let memberPaid = {}; // 우리 팀원 개개인이 실제로 긁은 돈
+        let teamPaid = {};
+        let teamSpent = {};
+        let memberPaid = {};
         
         appConfig.teams.forEach(t => {
             teamPaid[t.id] = 0;
@@ -349,29 +374,24 @@
         });
 
         let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
-        const myTeam = appConfig.teams.find(t => t.isMyTeam); // 내 팀 정보
+        const myTeam = appConfig.teams.find(t => t.isMyTeam);
 
-        // --- 2. 항목별 계산 루프 ---
         items.forEach((item, idx) => {
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
             tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
 
-            // 2-1. 결제자 처리 (누가 냈는가 -> 그 팀의 teamPaid 증가)
-            // payer가 '내 팀원' 중 한 명이면 -> 내 팀이 낸 것으로 간주 + 개인 기록
             if (appConfig.members.includes(item.payer)) {
                 teamPaid[myTeam.id] += amt;
                 memberPaid[item.payer] += amt;
             } else {
-                // payer가 다른 팀 이름과 일치하면 -> 그 팀이 낸 것으로 간주
                 const payerTeam = appConfig.teams.find(t => t.name === item.payer);
                 if (payerTeam) {
                     teamPaid[payerTeam.id] += amt;
                 }
             }
 
-            // 2-2. 소비 팀 처리 (누가 먹었는가 -> teamSpent 증가)
-            const activeTeams = Object.keys(item.teams).filter(tid => item.teams[tid]); // 체크된 팀 ID들
+            const activeTeams = Object.keys(item.teams).filter(tid => item.teams[tid]);
             if (activeTeams.length > 0) {
                 const perTeamCost = amt / activeTeams.length;
                 activeTeams.forEach(tid => {
@@ -380,16 +400,14 @@
             }
         });
 
-        // --- 3. 외부 송금 가이드 (팀 간 정산) ---
         let diffs = appConfig.teams.map(t => ({
             id: t.id,
             name: t.name,
-            balance: teamPaid[t.id] - teamSpent[t.id] // (+: 받을 돈, -: 줄 돈)
+            balance: teamPaid[t.id] - teamSpent[t.id]
         }));
 
         let msg = "";
-        // 줄 돈이 있는 팀(debt) -> 받을 돈이 있는 팀(credit) 매칭
-        diffs.filter(d => d.balance < -1).forEach(debtor => { // -1원은 오차 무시
+        diffs.filter(d => d.balance < -1).forEach(debtor => {
             let debt = Math.abs(debtor.balance);
             diffs.filter(c => c.balance > 1).forEach(creditor => {
                 if (debt <= 0 || creditor.balance <= 0) return;
@@ -411,15 +429,10 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료 (주고받을 돈 없음)"}</div>`;
         
-        // --- 4. 내부 정산 (옵션 A, B 동적 생성) ---
-        // 공식: 내 팀의 총 소비액 / 팀원 수 = 1인당 부담금
         const myTeamTotalSpent = teamSpent[myTeam.id];
         const perMemberShare = myTeamTotalSpent / appConfig.members.length;
-        const netFlowC = teamPaid[myTeam.id] - teamSpent[myTeam.id]; // 외부에서 들어올 돈(양수) or 나갈 돈(음수)
+        const netFlowC = teamPaid[myTeam.id] - teamSpent[myTeam.id];
 
-        // 옵션 A: 우리끼리만 정산 (외부 송금 전)
-        // 각자: (낸 돈) - (1인당 부담금) = 차액
-        // 차액이 양수면 받아야 함, 음수면 내야 함.
         let internalSettlementHtml = "";
         let givers = [];
         let receivers = [];
@@ -430,11 +443,9 @@
             else if (diff > 1) receivers.push({name: m, amount: diff});
         });
 
-        // N명이므로 1:1 매칭보다는 "누가 얼마를 내고, 누가 얼마를 받는지" 리스트로 보여주는 게 정확함
         if (givers.length === 0 && receivers.length === 0) {
             internalSettlementHtml = "<div>정산 완료 (차액 없음)</div>";
         } else {
-            // 심플하게 "누가 누구에게" 로직 (Greedy Algorithm)
             givers.forEach(g => {
                 receivers.forEach(r => {
                     if (g.amount <= 0 || r.amount <= 0) return;
@@ -446,15 +457,10 @@
             });
         }
 
-        // 옵션 B: 외부 정산 포함 최종 분배
-        // 공식: (내가 낸 돈) - (내 몫) = 최종 챙길 돈 (양수: 챙김, 음수: 냄)
         let optionBHtml = "";
         appConfig.members.forEach(m => {
             const take = memberPaid[m] - perMemberShare;
-            const otherTakes = Object.keys(memberPaid).filter(name => name !== m).map(name => memberPaid[name] - perMemberShare);
-            const othersNegative = otherTakes.filter(v => v < 0).reduce((a,b)=>a+b, 0); // 파트너들이 토해내는 돈 합계
-
-            optionBHtml += `<div style="margin-bottom:4px;">${getLabelAndValue(m, take, othersNegative, netFlowC)}</div>`;
+            optionBHtml += `<div style="margin-bottom:4px;">${getLabelAndValue(m, take)}</div>`;
         });
 
         const flowText = netFlowC >= 0 
@@ -483,18 +489,7 @@
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
-    // 옵션 B 표시 헬퍼 함수
-    function getBreakdown(myTake, othersNegative, netFlow) {
-        if (myTake <= 0) return ""; 
-        let sources = [];
-        if (othersNegative < 0) sources.push(`팀원에게 ${Math.round(Math.abs(othersNegative)).toLocaleString()}원`); // N명이면 정확히 누구 건지 특정하기 복잡하므로 퉁침
-        if (netFlow > 0) sources.push(`외부에서 ${Math.round(netFlow).toLocaleString()}원`); // 단순화: 내가 받을 돈이 있다면 외부 돈도 포함일 확률 높음 (정확한 기여도 비례 배분은 복잡하므로 생략)
-        // *참고: N명일 때 '출처'를 정확히 명시하려면 복잡도가 급상승하므로, 2명일 때처럼 명확하지 않으면 출처 텍스트는 간소화하거나 생략하는 게 나음.
-        // 여기서는 기존 로직 유지하되, 텍스트만 조금 범용적으로 변경.
-        return ""; // N명 로직에서는 출처 표기가 오히려 혼란을 줄 수 있어 일단 숨김 (계산값 자체는 정확함)
-    }
-
-    function getLabelAndValue(name, val, othersNegative, netFlow) {
+    function getLabelAndValue(name, val) {
         if (val >= 0) {
             return `<div><span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span></div>`;
         } else {
