@@ -6,7 +6,7 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v7] Precision Logic Fix */
+        /* [Update: 2026-02-03-v8] Added Distribution Guide */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -178,7 +178,12 @@
         const invalid = items.find(i => !i.payer || !i.amount || i.amount === "0");
         if (invalid) return alert("결제 정보가 누락된 항목이 있습니다.");
 
-        let total = 0, teamPaid = { A: 0, B: 0, C: 0 }, teamSpent = { A: 0, B: 0, C: 0 }, indC = { 지훈: 0, 은혜: 0 };
+        let total = 0;
+        let teamPaid = { A: 0, B: 0, C: 0 };
+        let teamSpent = { A: 0, B: 0, C: 0 };
+        let indC = { 지훈: 0, 은혜: 0 }; // C팀 내부 기여도(유효 지출)
+        let realPaid = { 지훈: 0, 은혜: 0 }; // 실제 카드 긁은 총액
+
         let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
 
         items.forEach((item, idx) => {
@@ -186,24 +191,29 @@
             total += amt;
             tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
             
-            // 1. 전체 송금을 위한 지불액 기록
+            // 1. 전체 송금을 위한 팀별 지불액 및 개인별 총 결제액 기록
             if(item.payer.includes('A팀')) teamPaid.A += amt;
             else if(item.payer.includes('B팀')) teamPaid.B += amt;
-            else teamPaid.C += amt;
+            else {
+                teamPaid.C += amt;
+                if(item.payer === '지훈') realPaid.지훈 += amt;
+                if(item.payer === '은혜') realPaid.은혜 += amt;
+            }
 
-            // 2. 각 팀 소비액 계산 및 C팀 내부 기여도(유효 지불액) 계산
+            // 2. 각 팀 소비액 계산 및 C팀 내부 기여도 계산
             const active = Object.keys(item.teams).filter(k => item.teams[k]);
             const perTeamCost = amt / active.length;
             
             active.forEach(t => teamSpent[t] += perTeamCost);
 
-            // [수정된 핵심 로직] C팀이 참여했을 때만, 'C팀의 몫'을 결제한 사람에게 내부 기여도 인정
+            // C팀 몫을 지훈/은혜 중 누가 부담했는지 체크 (내부 정산용)
             if(item.teams.C) {
                 if(item.payer === '지훈') indC.지훈 += perTeamCost;
                 if(item.payer === '은혜') indC.은혜 += perTeamCost;
             }
         });
 
+        // --- 외부 송금 가이드 ---
         let diff = [{n:teamNames.A, v:teamPaid.A-teamSpent.A}, {n:teamNames.B, v:teamPaid.B-teamSpent.B}, {n:teamNames.C, v:teamPaid.C-teamSpent.C}];
         let msg = "";
         diff.filter(d => d.v < 0).forEach(d => {
@@ -225,11 +235,41 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
         
-        // [수정된 로직 적용] (C팀 총 소비액 / 2) - (은혜가 C팀 몫으로 기여한 금액)
-        // 양수면 은혜가 덜 낸 것이므로 지훈->은혜, 음수면 은혜가 더 낸 것이므로 은혜->지훈 (변수명 toSendC는 은혜가 보낼 돈 기준)
+        // --- 내부 정산 (차액 계산) ---
+        // (C팀 총 소비액 / 2) - (은혜가 C팀 몫으로 기여한 금액)
         const toSendC = (teamSpent.C / 2) - indC.은혜; 
         
-        document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;"><div style="font-size:0.75rem; color:#888;">[C팀 내부 정산] ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>`;
+        // --- [추가 기능] 외부 수금액 배분 가이드 ---
+        // 공식: (내가 실제 긁은 돈) - (내 진짜 몫: C팀소비/2) = 내가 챙겨야 할 돈
+        // 이 금액이 양수면 수금액에서 가져가면 되고, 음수면 돈을 더 내야 함
+        const takeE = realPaid.은혜 - (teamSpent.C / 2);
+        const takeJ = realPaid.지훈 - (teamSpent.C / 2);
+
+        let privateHtml = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;">
+                           <div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 C팀 내부 정산 (둘 중 하나만 선택)</div>`;
+        
+        // 1. 단순 내부 송금 (돈을 주고 받고 끝낼 때)
+        privateHtml += `<div style="margin-bottom:15px;">
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 A) A/B팀에게 돈 받기 전, 둘끼리만 정산할 때</div>
+                            <div style="font-size:0.85rem; color:#fff;">${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>
+                        </div>`;
+
+        // 2. 외부 수금액 배분 (받은 돈 나눌 때)
+        privateHtml += `<div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 B) A/B팀에게 받은 돈(${Math.round(teamSpent.A + teamSpent.B).toLocaleString()}원)을 나눌 때</div>
+                            <div style="background:#3d4446; padding:10px; border-radius:8px; font-size:0.85rem;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span>은혜 챙길 돈:</span>
+                                    <span class="highlight">${Math.round(takeE).toLocaleString()}원</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between;">
+                                    <span>지훈 챙길 돈:</span>
+                                    <span class="highlight">${Math.round(takeJ).toLocaleString()}원</span>
+                                </div>
+                            </div>
+                        </div>`;
+
+        document.getElementById('privateSection').innerHTML = privateHtml;
         
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
@@ -238,6 +278,9 @@
 
     function saveAsImage() {
         const privateSection = document.getElementById('privateSection');
+        // 캡처 시에는 내부 정산 내역도 포함해서 보여줄지 여부는 사용자 선택이나, 
+        // 보통 리포트 공유용으로는 가리고 싶어하므로 숨겼다가 복구
+        // (요청하신 대로 내부정산 포함 출력이므로 이번엔 안 숨기고 찍어도 되지만 기존 로직 유지)
         privateSection.style.display = 'none';
         html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f2f4f7", scale: 2 }).then(canvas => {
             const link = document.createElement('a');
