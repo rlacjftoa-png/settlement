@@ -6,7 +6,7 @@
     <title>팀 정산 어플 (Pro)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v23] Crystal Clear Settlement Guide */
+        /* [Update: 2026-02-03-v24] Internal Scroll Implementation */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -18,6 +18,22 @@
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         
+        /* [핵심 수정] 리스트 영역에 내부 스크롤 적용 */
+        #itemList {
+            max-height: 60vh; /* 화면 높이의 60%까지만 늘어남 */
+            overflow-y: auto; /* 넘치면 세로 스크롤 생성 */
+            padding-right: 4px; /* 스크롤바와 내용 간격 */
+            margin-bottom: 10px;
+            /* 부드러운 스크롤 */
+            scroll-behavior: smooth;
+        }
+
+        /* [디자인] 커스텀 스크롤바 (깔끔하게) */
+        #itemList::-webkit-scrollbar { width: 5px; }
+        #itemList::-webkit-scrollbar-track { background: transparent; }
+        #itemList::-webkit-scrollbar-thumb { background: #d1d8e0; border-radius: 10px; }
+        #itemList::-webkit-scrollbar-thumb:hover { background: #a5b1c2; }
+
         .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; transition: all 0.3s ease; }
         .item-group.collapsed { border-left: 6px solid var(--success); background: #fafbfc; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .item-group.collapsed .title-text::before { content: "✔"; color: var(--success); margin-right: 6px; font-weight: bold; }
@@ -69,14 +85,7 @@
         .modal-close-btn { background: var(--dark); color: white; margin-top: 10px; }
         .radio-wrapper { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; margin-bottom: 5px; }
 
-        /* [새로운 스타일] 정산 가이드 카드 */
-        .settle-card {
-            background: rgba(255,255,255,0.08);
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-left: 4px solid;
-        }
+        .settle-card { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 8px; border-left: 4px solid; }
         .settle-card.send { border-color: var(--danger); }
         .settle-card.keep { border-color: var(--success); }
         .step-badge { font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; display: inline-block; }
@@ -84,7 +93,6 @@
         .step-badge.keep { background: rgba(40, 167, 69, 0.2); color: #5dd579; }
         .settle-text { font-size: 0.9rem; font-weight: 500; color: #fff; display: flex; align-items: center; gap: 6px; }
         
-        /* [새로운 스타일] 개인별 현황판 */
         .status-table { width: 100%; font-size: 0.75rem; margin-bottom: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; color: #ccc; }
         .status-row { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px dashed #555; padding-bottom: 4px; }
         .status-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -101,6 +109,7 @@
 
     <div class="card">
         <div id="itemList"></div>
+        
         <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
         <button class="clear-btn" onclick="clearAllItems()">🗑️ 모든 내역 지우기</button>
         <button class="calc-btn" onclick="calculate()">🚀 정산 결과 확인</button>
@@ -335,15 +344,13 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료 (주고받을 돈 없음)"}</div>`;
         
-        // --- 내부 정산 로직 (초간단 레시피 버전) ---
         const myTeamTotalSpent = teamSpent[myTeam.id];
         const perMemberShare = myTeamTotalSpent / appConfig.members.length;
-        const netFlowC = teamPaid[myTeam.id] - teamSpent[myTeam.id]; // 외부 유입/유출금
+        const netFlowC = teamPaid[myTeam.id] - teamSpent[myTeam.id]; 
 
-        // 1. 개인별 현황판 데이터 생성
         let statusHtml = "";
         let givers = [];
-        let receivers = []; // 돈 받아야 하는 사람 (결제 많이 한 사람)
+        let receivers = []; 
         
         appConfig.members.forEach(m => {
             const paid = memberPaid[m];
@@ -357,7 +364,6 @@
             else if (diff > 1) receivers.push({name: m, amount: diff});
         });
 
-        // 2. 내부 송금 레시피 (Greedy Match)
         let step1Html = "";
         if (givers.length === 0 && receivers.length === 0) {
             step1Html = `<div style="font-size:0.85rem; color:#aaa;">주고받을 돈이 없습니다.</div>`;
@@ -375,11 +381,8 @@
             });
         }
 
-        // 3. 외부 자금 처리 레시피 (대표자 1명이 처리한다고 가정)
-        // 가장 많이 받아야 하는 사람(Receiver 중 1등)을 대표자로 선정
         let step2Html = "";
         if (Math.abs(netFlowC) > 10) {
-            // 대표자 선정 (돈을 가장 많이 쓴 사람이 외부 돈도 챙기거나 처리하는게 일반적)
             const representative = Object.keys(memberPaid).reduce((a, b) => memberPaid[a] > memberPaid[b] ? a : b);
             
             if (netFlowC > 0) {
