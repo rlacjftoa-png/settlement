@@ -2,120 +2,84 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>커스텀 팀 정산 어플</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>팀 정산 어플 Pro</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-Final] System Nav Bar Overlap Defense */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 450px; margin: 0 auto; padding-bottom: 50px; }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; text-align: center; color: var(--primary); }
         
-        body { 
-            font-family: -apple-system, sans-serif; 
-            background: var(--bg); 
-            padding: 10px; 
-            margin: 0; 
-            color: #333; 
-            -webkit-tap-highlight-color: transparent; 
-            /* S25 울트라 네비게이션 바 높이를 고려하여 하단 여백 대폭 확보 */
-            padding-bottom: 200px !important; 
-        }
-
-        .container { max-width: 450px; margin: 0 auto; }
-        .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
-        h2 { margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid #f1f3f5; padding-bottom: 10px; text-align: center; }
-        
-        /* 설정창 */
-        .settings-content { display: none; padding-top: 10px; }
-        .settings-content.active { display: block; }
-        .setting-row { margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }
-        .setting-row input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; margin-top: 5px; }
-
-        /* 입력 그룹 */
-        .item-group { border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; overflow: hidden; background: #fff; position: relative; }
-        .item-header { padding: 10px 45px 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
-        .item-body { padding: 15px; border-top: 1px solid #eee; background: #fdfdfd; }
+        /* 차수별 아이템 스타일 */
+        .item-group { border: 1px solid #eef0f2; border-radius: 12px; margin-bottom: 12px; overflow: hidden; background: #fff; position: relative; transition: all 0.2s; }
+        .item-group.collapsed { border-left: 4px solid var(--primary); }
+        .item-header { padding: 12px 45px 12px 15px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; background: #fafbfc; }
+        .item-body { padding: 15px; border-top: 1px solid #eee; background: #fff; }
         .collapsed .item-body { display: none; }
         
-        .remove-btn { position: absolute; right: 8px; top: 8px; background: #f1f3f5; color: #adb5bd; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: none; z-index: 5; }
-        input[type="text"] { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 0.9rem; }
-        .label-text { font-size: 0.75rem; font-weight: bold; margin-top: 8px; display: block; color: #777; }
-        .flex-group { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
-        .radio-item, .check-item { font-size: 0.75rem; background: #fff; border: 1px solid #e2e8f0; padding: 5px 8px; border-radius: 15px; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+        /* 버튼 및 입력창 */
+        .remove-btn { position: absolute; right: 8px; top: 12px; background: #ffeded; color: var(--danger); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: none; z-index: 5; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border: 1.5px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1rem; transition: border 0.2s; }
+        input[type="text"]:focus { border-color: var(--primary); outline: none; }
         
-        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .save-btn { background: var(--success); color: white; margin-top: 10px; padding: 10px; font-size: 0.85rem; }
-        .add-btn { background: #495057; color: white; margin-bottom: 8px; }
-        .clear-btn { background: #f1f3f5; color: #adb5bd; margin-bottom: 8px; padding: 10px; font-size: 0.8rem; }
-        .calc-btn { background: var(--primary); color: white; margin-bottom: 10px; }
+        .label-text { font-size: 0.8rem; font-weight: 700; margin-top: 12px; display: block; color: #555; }
+        .flex-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+        .radio-item, .check-item { font-size: 0.75rem; background: #f8f9fa; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        input[type="radio"], input[type="checkbox"] { cursor: pointer; }
         
-        /* 리포트 결과창 */
-        .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 15px; }
-        .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.75rem; color: #ddd; }
-        .report-table th { border-bottom: 1px solid #555; padding: 5px; text-align: left; }
-        .report-table td { padding: 5px; border-bottom: 1px solid #444; }
-        .highlight { color: #f39c12; font-weight: bold; }
-        
-        .guide-container { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #444; }
-        .guide-team { font-size: 0.85rem; margin-bottom: 4px; display: block; color: #f39c12; font-weight: bold; }
-        .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
-        .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: opacity 0.2s; }
+        button:active { opacity: 0.7; }
+        .save-btn { background: var(--success); color: white; margin-top: 15px; font-size: 0.9rem; }
+        .add-btn { background: var(--dark); color: white; margin-bottom: 10px; }
+        .clear-btn { background: #e9ecef; color: #868e96; margin-bottom: 10px; padding: 10px; font-size: 0.8rem; }
+        .calc-btn { background: var(--primary); color: white; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); }
+        .image-btn { background: #6c5ce7; color: white; margin-top: 15px; }
 
-        /* 하단 고정 액션 버튼 영역: 네비게이션 바와 확실히 거리 두기 */
-        .action-buttons { 
-            position: relative; 
-            margin-top: 30px;
-            padding-bottom: 100px; /* 버튼 아래에 거대한 투명 공간 확보 */
-        }
-        .image-btn { background: #6c5ce7; color: white; margin-bottom: 20px; }
+        /* 결과 리포트 */
+        .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.8rem; color: #eee; }
+        .report-table th { border-bottom: 1px solid #555; padding: 8px; text-align: left; color: #aaa; }
+        .report-table td { padding: 8px; border-bottom: 1px solid #444; }
+        .highlight { color: #f39c12; font-weight: bold; font-size: 1rem; }
+        
+        .guide-container { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #4d5456; }
+        .guide-container:last-child { border-bottom: none; }
+        .guide-team { font-size: 0.9rem; margin-bottom: 6px; display: block; color: #f39c12; font-weight: bold; }
+        .guide-detail { font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .send-label { font-size: 0.7rem; color: #ccc; background: #444; padding: 3px 8px; border-radius: 5px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card" style="border: 2px solid var(--primary);">
-        <h2 onclick="toggleSettings()" style="cursor:pointer; border-bottom:none; margin-bottom:0;">⚙️ 팀 및 멤버 설정</h2>
-        <div id="settingsContent" class="settings-content">
-            <div id="teamSettingsArea"></div>
-        </div>
-    </div>
-
     <div class="card">
-        <h2>🧾 정산 항목 입력</h2>
+        <h2>🧾 팀 정산 매니저</h2>
         <div id="itemList"></div>
         <button class="add-btn" onclick="addNewItem()">+ 새로운 차수 추가</button>
-        <button class="clear-btn" onclick="clearAllItems()">🗑️ 모든 내역 지우기</button>
-        <button class="calc-btn" onclick="calculate()">🚀 정산 결과 확인</button>
+        <button class="clear-btn" onclick="clearAllItems()">🗑️ 데이터 초기화</button>
+        <button class="calc-btn" onclick="calculate()">🚀 정산 결과 계산하기</button>
     </div>
 
     <div id="captureArea">
         <div id="result" class="result-box card">
-            <h3 style="color:white; margin-top:0; text-align:center; font-size:1.1rem;">📊 최종 정산 리포트</h3>
+            <h3 style="color:white; margin-top:0; text-align:center; font-size:1.2rem;">📊 최종 정산 리포트</h3>
             <div id="reportHeader"></div>
             <div id="reportGuide"></div>
             <div id="privateSection"></div>
         </div>
     </div>
     
-    <div id="actionButtons" class="action-buttons" style="display:none;">
-        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지로 저장하기</button>
-        <div style="height: 60px;"></div>
+    <div id="actionButtons" style="display:none;">
+        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장</button>
     </div>
 </div>
 
 <script>
-    /* 자바스크립트 로직 생략 (기존과 동일) */
-    let config = {
-        teams: [
-            { id: '1', name: '1팀', members: ['의성', '지혜'] },
-            { id: '2', name: '2팀', members: ['현수', '미영'] },
-            { id: '3', name: '3팀', members: ['지훈', '은혜'] }
-        ]
-    };
+    const teamNames = { A: "A팀(의성,지혜)", B: "B팀(현수,미영)", C: "C팀(지훈,은혜)" };
 
     window.onload = function() {
-        const savedConfig = localStorage.getItem('teamConfig');
-        if (savedConfig) config = JSON.parse(savedConfig);
-        renderSettings();
         const savedData = localStorage.getItem('settlementData');
         if (savedData) {
             JSON.parse(savedData).forEach((item) => renderItem(item));
@@ -124,85 +88,36 @@
         }
     }
 
-    function toggleSettings() { document.getElementById('settingsContent').classList.toggle('active'); }
-    function renderSettings() {
-        const area = document.getElementById('teamSettingsArea');
-        area.innerHTML = config.teams.map((t, idx) => `
-            <div class="setting-row">
-                <span class="label-text">${t.id}번 팀 정보</span>
-                <input type="text" value="${t.name}" oninput="updateConfig(${idx}, 'name', this.value)" placeholder="팀명">
-                <input type="text" value="${t.members.join(', ')}" oninput="updateConfig(${idx}, 'members', this.value)" placeholder="멤버명">
-            </div>
-        `).join('');
-    }
-
-    function updateConfig(idx, key, value) {
-        if (key === 'members') {
-            config.teams[idx].members = value.split(',').map(m => m.trim()).filter(m => m !== "");
-        } else {
-            config.teams[idx].name = value;
-        }
-        localStorage.setItem('teamConfig', JSON.stringify(config));
-        refreshAllItems();
-    }
-
-    function refreshAllItems() {
-        const currentItems = grabCurrentItemsData();
-        document.getElementById('itemList').innerHTML = "";
-        currentItems.forEach(item => renderItem(item));
-    }
-
-    function grabCurrentItemsData() {
-        const items = [];
-        document.querySelectorAll('.item-group').forEach(g => {
-            const tempId = g.getAttribute('data-id');
-            items.push({
-                name: g.querySelector('.item-name').value,
-                amount: g.querySelector('.item-amount').value,
-                payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
-                teams: { 
-                    1: g.querySelector('.team-1')?.checked ?? true, 
-                    2: g.querySelector('.team-2')?.checked ?? true, 
-                    3: g.querySelector('.team-3')?.checked ?? true 
-                },
-                collapsed: g.classList.contains('collapsed')
-            });
-        });
-        return items;
-    }
-
     function renderItem(data = null) {
         const tempId = Date.now() + Math.random();
         const div = document.createElement('div');
         div.className = `item-group ${data?.collapsed ? 'collapsed' : ''}`;
         div.setAttribute('data-id', tempId);
-        const payers = [];
-        config.teams.forEach(t => {
-            payers.push(`${t.name}(${t.members.join(',')})`);
-            t.members.forEach(m => payers.push(m));
-        });
+        
         div.innerHTML = `
             <button class="remove-btn" onclick="removeItem(this)">×</button>
             <div class="item-header" onclick="toggleItem(this)">
-                <span style="font-weight:bold; font-size:0.9rem;" class="title-text">...</span>
-                <div style="font-size:0.65rem; color:#888;" class="sub-text"></div>
+                <span class="title-text" style="font-weight:bold; color:var(--dark);">...</span>
+                <div class="sub-text" style="font-size:0.7rem; color:#888;"></div>
             </div>
             <div class="item-body">
-                <input type="text" placeholder="항목명" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
-                <input type="text" placeholder="금액" class="item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
-                <span class="label-text">💳 결제자</span>
+                <input type="text" placeholder="항목명 (예: 1차 점심)" class="item-name" value="${data?.name || ''}" oninput="updateHeader(this)">
+                <input type="text" placeholder="결제 금액 (원)" class="item-amount" inputmode="numeric" value="${data?.amount || ''}" oninput="formatAmount(this); updateHeader(this)">
+                
+                <span class="label-text">💳 결제자 (누가 냈나요?)</span>
                 <div class="flex-group">
-                    ${payers.map(p => `
+                    ${[teamNames.A, teamNames.B, '지훈', '은혜'].map(p => `
                         <label class="radio-item"><input type="radio" name="payer_${tempId}" value="${p}" ${data?.payer === p ? 'checked' : ''} onchange="updateHeader(this)">${p}</label>
                     `).join('')}
                 </div>
-                <span class="label-text">👥 참여 팀</span>
+                
+                <span class="label-text">👥 참여 팀 (n분의 1 대상)</span>
                 <div class="flex-group">
-                    ${config.teams.map(t => `
-                        <label class="check-item"><input type="checkbox" class="team-${t.id}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}(${t.members.join(',')})</label>
-                    `).join('')}
+                    <label class="check-item"><input type="checkbox" class="team-a" ${data?.teams?.A !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.A}</label>
+                    <label class="check-item"><input type="checkbox" class="team-b" ${data?.teams?.B !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.B}</label>
+                    <label class="check-item"><input type="checkbox" class="team-c" ${data?.teams?.C !== false ? 'checked' : ''} onchange="updateHeader(this)">${teamNames.C}</label>
                 </div>
-                <button class="save-btn" onclick="saveAndCollapse(this)">✔ 저장 및 접기</button>
+                <button class="save-btn" onclick="saveAndCollapse(this)">✔ 입력 완료 및 접기</button>
             </div>
         `;
         document.getElementById('itemList').appendChild(div);
@@ -214,10 +129,17 @@
         const nameInput = g.querySelector('.item-name').value;
         const amt = g.querySelector('.item-amount').value || "0";
         const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미선택";
-        const activeTeams = [];
-        config.teams.forEach(t => { if(g.querySelector(`.team-${t.id}`).checked) activeTeams.push(t.name); });
-        g.querySelector('.title-text').innerText = `${nameInput || "내역"} (${amt}원)`;
-        g.querySelector('.sub-text').innerHTML = `결제: ${payer.split('(')[0]} | 참여: ${activeTeams.join(', ')}`;
+        const teams = [];
+        if(g.querySelector('.team-a').checked) teams.push("A");
+        if(g.querySelector('.team-b').checked) teams.push("B");
+        if(g.querySelector('.team-c').checked) teams.push("C");
+        
+        const allGroups = Array.from(document.querySelectorAll('.item-group'));
+        const index = allGroups.indexOf(g) + 1;
+        const finalName = nameInput || index + "차 정산";
+        
+        g.querySelector('.title-text').innerText = `${finalName} [${amt}원]`;
+        g.querySelector('.sub-text').innerHTML = `<b>결제:</b> ${payer} | <b>참여:</b> ${teams.length > 0 ? teams.join(', ') + '팀' : '없음'}`;
         saveToLocal();
     }
 
@@ -226,72 +148,155 @@
         obj.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
-    function addNewItem() { renderItem(); }
-    function clearAllItems() { if(confirm("초기화하시겠습니까?")) { localStorage.removeItem('settlementData'); location.reload(); } }
-    function saveAndCollapse(btn) { btn.closest('.item-group').classList.add('collapsed'); saveToLocal(); }
-    function saveToLocal() { localStorage.setItem('settlementData', JSON.stringify(grabCurrentItemsData())); }
+    function addNewItem() { 
+        renderItem();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+
+    function clearAllItems() {
+        if(confirm("모든 데이터를 지우고 새로 시작할까요?")) {
+            localStorage.removeItem('settlementData');
+            document.getElementById('itemList').innerHTML = "";
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('actionButtons').style.display = 'none';
+            addNewItem();
+        }
+    }
+
+    function saveAndCollapse(btn) {
+        btn.closest('.item-group').classList.add('collapsed');
+        saveToLocal();
+    }
+
+    function saveToLocal() {
+        const items = [];
+        document.querySelectorAll('.item-group').forEach(g => {
+            const tempId = g.getAttribute('data-id');
+            items.push({
+                name: g.querySelector('.item-name').value,
+                amount: g.querySelector('.item-amount').value,
+                payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
+                teams: { A: g.querySelector('.team-a').checked, B: g.querySelector('.team-b').checked, C: g.querySelector('.team-c').checked },
+                collapsed: g.classList.contains('collapsed')
+            });
+        });
+        localStorage.setItem('settlementData', JSON.stringify(items));
+    }
+
     function toggleItem(header) { header.closest('.item-group').classList.toggle('collapsed'); }
-    function removeItem(btn) { if(confirm("삭제?")) { btn.closest('.item-group').remove(); saveToLocal(); } }
+    function removeItem(btn) { if(confirm("이 내역을 삭제할까요?")) { btn.closest('.item-group').remove(); saveToLocal(); } }
 
     function calculate() {
         saveToLocal();
         const items = JSON.parse(localStorage.getItem('settlementData') || "[]");
-        if (items.find(i => !i.payer || !i.amount || i.amount === "0")) return alert("결제 정보를 확인하세요.");
-        let total = 0, teamPaid = { 1: 0, 2: 0, 3: 0 }, teamSpent = { 1: 0, 2: 0, 3: 0 }, memberFlow = {}; 
-        config.teams.forEach(t => t.members.forEach(m => memberFlow[m] = { paid: 0, spent: 0, teamId: t.id }));
-        let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
+        if (items.length === 0) return alert("입력된 내역이 없습니다.");
+        
+        const invalid = items.find(i => !i.payer || !i.amount || i.amount === "0");
+        if (invalid) return alert("결제자 정보와 금액이 모두 입력되었는지 확인해주세요.");
+
+        let total = 0, teamPaid = { A: 0, B: 0, C: 0 }, teamSpent = { A: 0, B: 0, C: 0 }, indC = { 지훈: 0, 은혜: 0 };
+        let tableHtml = `<table class="report-table"><thead><tr><th>항목</th><th>결제자</th><th>금액</th></tr></thead><tbody>`;
+
         items.forEach((item, idx) => {
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
-            tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer.split('(')[0]}</td><td>${amt.toLocaleString()}원</td></tr>`;
-            config.teams.forEach(t => { if(item.payer.startsWith(t.name)) teamPaid[t.id] += amt; });
-            if(memberFlow[item.payer]) { teamPaid[memberFlow[item.payer].teamId] += amt; memberFlow[item.payer].paid += amt; }
-            const activeTeamIds = Object.keys(item.teams).filter(k => item.teams[k]);
-            const perTeamAmt = amt / activeTeamIds.length;
-            activeTeamIds.forEach(tid => {
-                teamSpent[tid] += perTeamAmt;
-                const team = config.teams.find(t => t.id === tid);
-                const perMemberAmt = perTeamAmt / team.members.length;
-                team.members.forEach(m => memberFlow[m].spent += perMemberAmt);
-            });
+            tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
+            
+            // 결제한 팀 계산
+            if(item.payer.includes('A팀')) teamPaid.A += amt;
+            else if(item.payer.includes('B팀')) teamPaid.B += amt;
+            else { 
+                teamPaid.C += amt; 
+                if(item.payer === '지훈') indC.지훈 += amt; 
+                if(item.payer === '은혜') indC.은혜 += amt; 
+            }
+
+            // 참여 팀별 지출(n분의 1) 계산
+            const activeTeams = Object.keys(item.teams).filter(k => item.teams[k]);
+            if(activeTeams.length > 0) {
+                activeTeams.forEach(t => teamSpent[t] += (amt / activeTeams.length));
+            }
         });
-        let diff = config.teams.map(t => ({ id: t.id, name: `${t.name}(${t.members.join(',')})`, v: teamPaid[t.id] - teamSpent[t.id] }));
+        tableHtml += `</tbody></table>`;
+
+        // 팀별 차액 계산
+        let diff = [
+            {id: 'A', n: teamNames.A, v: teamPaid.A - teamSpent.A},
+            {id: 'B', n: teamNames.B, v: teamPaid.B - teamSpent.B},
+            {id: 'C', n: teamNames.C, v: teamPaid.C - teamSpent.C}
+        ];
+
         let msg = "";
-        diff.filter(d => d.v < 0).forEach(d => {
+        let creditors = diff.filter(d => d.v > 0);
+        let debtors = diff.filter(d => d.v < 0);
+
+        debtors.forEach(d => {
             let debt = Math.abs(d.v);
-            diff.filter(c => c.v > 0).forEach(c => {
-                if(debt <= 0 || c.v <= 0) return;
+            creditors.forEach(c => {
+                if(debt <= 1 || c.v <= 1) return; // 1원 이하는 무시
                 let p = Math.min(debt, c.v);
-                msg += `<div class="guide-container"><span class="guide-team">💰 ${d.name} → ${c.name}</span><div class="guide-detail"><span class="send-label">보내야 할 돈</span><span class="highlight">${Math.round(p).toLocaleString()}원</span></div></div>`;
-                debt -= p; c.v -= p;
+                msg += `<div class="guide-container">
+                            <span class="guide-team">💰 ${d.n} ➔ ${c.n}</span>
+                            <div class="guide-detail">
+                                <span class="send-label">보낼 금액</span>
+                                <span class="highlight">${Math.round(p).toLocaleString()}원</span>
+                            </div>
+                        </div>`;
+                debt -= p;
+                c.v -= p;
             });
         });
-        let internalMsg = "";
-        config.teams.forEach(t => {
-            const mDiff = t.members.map(m => ({ name: m, v: memberFlow[m].paid - memberFlow[m].spent }));
-            mDiff.filter(d => d.v < 0).forEach(d => {
-                let dAmt = Math.abs(d.v);
-                mDiff.filter(c => c.v > 0).forEach(c => {
-                    if(dAmt <= 0 || c.v <= 0) return;
-                    let p = Math.min(dAmt, c.v);
-                    internalMsg += `<div style="font-size:0.75rem; color:#ccc;">[${t.name} 내부] ${d.name} → ${c.name}: <span class="highlight">${Math.round(p).toLocaleString()}원</span></div>`;
-                    dAmt -= p; c.v -= p;
-                });
-            });
-        });
-        document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
-        document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;">${internalMsg || '<div style="font-size:0.75rem; color:#888;">내부 정산 내역 없음</div>'}`;
+
+        document.getElementById('reportHeader').innerHTML = `
+            <div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px; margin-bottom:10px;">📍 상세 지출 내역</div>
+            ${tableHtml}
+            <div style="text-align:right; font-weight:bold; margin:15px 0; color:#f39c12; font-size:1.1rem;">총 지출액: ${total.toLocaleString()}원</div>`;
+        
+        document.getElementById('reportGuide').innerHTML = `
+            <div style="font-size:0.8rem; color:#bbb; margin-bottom:10px;">📍 최종 송금 가이드</div>
+            <div style="background:#3d4446; padding:15px; border-radius:14px; border:1px solid #4d5456;">${msg || "정산할 내역이 없습니다."}</div>`;
+        
+        // C팀 내부 정산 (지훈, 은혜)
+        const totalCSpent = teamSpent.C;
+        const toSendC = (totalCSpent / 2) - indC.은혜;
+        document.getElementById('privateSection').innerHTML = `
+            <hr style="border:0; border-top:1px dashed #555; margin:20px 0;">
+            <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+                <div style="font-size:0.75rem; color:#aaa; margin-bottom:5px;">[C팀 내부 정산 참조]</div>
+                <div style="font-size:0.85rem; color:#eee;">
+                    ${Math.round(toSendC) === 0 ? '지훈/은혜 동일 지출' : 
+                      toSendC > 0 ? `은혜 ➔ 지훈: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span>` : 
+                      `지훈 ➔ 은혜: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span>`}
+                </div>
+            </div>`;
+        
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        
+        // 결과창으로 부드럽게 스크롤
+        setTimeout(() => {
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }, 100);
     }
 
     function saveAsImage() {
-        const priv = document.getElementById('privateSection'); priv.style.display = 'none';
-        html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f2f4f7", scale: 2 }).then(canvas => {
-            const link = document.createElement('a'); link.download = `정산리포트_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL(); link.click(); priv.style.display = 'block';
+        const privateSection = document.getElementById('privateSection');
+        const actionButtons = document.getElementById('actionButtons');
+        
+        // 저장 시 불필요한 부분 일시 숨김
+        privateSection.style.opacity = '0.3'; 
+        
+        html2canvas(document.getElementById('captureArea'), { 
+            backgroundColor: "#2d3436", // 리포트 배경색에 맞춤
+            scale: 2,
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `정산리포트_${new Date().getMonth()+1}월${new Date().getDate()}일.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            privateSection.style.opacity = '1';
         });
     }
 </script>
