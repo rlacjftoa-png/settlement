@@ -6,7 +6,7 @@
     <title>커스텀 팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v8] Ultimate Navigation Bar Isolation */
+        /* [Update: 2026-02-03-Final] System Nav Bar Overlap Defense */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         
         body { 
@@ -16,8 +16,8 @@
             margin: 0; 
             color: #333; 
             -webkit-tap-highlight-color: transparent; 
-            /* 하단 공간을 과감하게 120px 확보 (S25 울트라 제스처 바 대응) */
-            padding-bottom: calc(env(safe-area-inset-bottom) + 120px); 
+            /* S25 울트라 네비게이션 바 높이를 고려하여 하단 여백 대폭 확보 */
+            padding-bottom: 200px !important; 
         }
 
         .container { max-width: 450px; margin: 0 auto; }
@@ -46,7 +46,7 @@
         .save-btn { background: var(--success); color: white; margin-top: 10px; padding: 10px; font-size: 0.85rem; }
         .add-btn { background: #495057; color: white; margin-bottom: 8px; }
         .clear-btn { background: #f1f3f5; color: #adb5bd; margin-bottom: 8px; padding: 10px; font-size: 0.8rem; }
-        .calc-btn { background: var(--primary); color: white; }
+        .calc-btn { background: var(--primary); color: white; margin-bottom: 10px; }
         
         /* 리포트 결과창 */
         .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 15px; }
@@ -60,14 +60,13 @@
         .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
         .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
 
-        /* 하단 고정 액션 버튼 영역 */
+        /* 하단 고정 액션 버튼 영역: 네비게이션 바와 확실히 거리 두기 */
         .action-buttons { 
             position: relative; 
-            margin-top: 20px;
-            /* 버튼 아래에 물리적인 공간을 더 만들어 네비게이션 바와 격리 */
-            padding-bottom: 50px; 
+            margin-top: 30px;
+            padding-bottom: 100px; /* 버튼 아래에 거대한 투명 공간 확보 */
         }
-        .image-btn { background: #6c5ce7; color: white; }
+        .image-btn { background: #6c5ce7; color: white; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -99,17 +98,17 @@
     
     <div id="actionButtons" class="action-buttons" style="display:none;">
         <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지로 저장하기</button>
-        <div style="height: 40px;"></div>
+        <div style="height: 60px;"></div>
     </div>
 </div>
 
 <script>
-    // [자바스크립트 로직은 이전과 동일하므로 유지됩니다]
+    /* 자바스크립트 로직 생략 (기존과 동일) */
     let config = {
         teams: [
-            { id: 'A', name: 'A팀', members: ['의성', '지혜'] },
-            { id: 'B', name: 'B팀', members: ['현수', '미영'] },
-            { id: 'C', name: 'C팀', members: ['지훈', '은혜'] }
+            { id: '1', name: '1팀', members: ['의성', '지혜'] },
+            { id: '2', name: '2팀', members: ['현수', '미영'] },
+            { id: '3', name: '3팀', members: ['지훈', '은혜'] }
         ]
     };
 
@@ -162,9 +161,9 @@
                 amount: g.querySelector('.item-amount').value,
                 payer: g.querySelector(`input[name="payer_${tempId}"]:checked`)?.value || "",
                 teams: { 
-                    A: g.querySelector('.team-a')?.checked ?? true, 
-                    B: g.querySelector('.team-b')?.checked ?? true, 
-                    C: g.querySelector('.team-c')?.checked ?? true 
+                    1: g.querySelector('.team-1')?.checked ?? true, 
+                    2: g.querySelector('.team-2')?.checked ?? true, 
+                    3: g.querySelector('.team-3')?.checked ?? true 
                 },
                 collapsed: g.classList.contains('collapsed')
             });
@@ -200,7 +199,7 @@
                 <span class="label-text">👥 참여 팀</span>
                 <div class="flex-group">
                     ${config.teams.map(t => `
-                        <label class="check-item"><input type="checkbox" class="team-${t.id.toLowerCase()}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}(${t.members.join(',')})</label>
+                        <label class="check-item"><input type="checkbox" class="team-${t.id}" ${data?.teams?.[t.id] !== false ? 'checked' : ''} onchange="updateHeader(this)">${t.name}(${t.members.join(',')})</label>
                     `).join('')}
                 </div>
                 <button class="save-btn" onclick="saveAndCollapse(this)">✔ 저장 및 접기</button>
@@ -216,7 +215,7 @@
         const amt = g.querySelector('.item-amount').value || "0";
         const payer = g.querySelector(`input[type="radio"]:checked`)?.value || "미선택";
         const activeTeams = [];
-        config.teams.forEach(t => { if(g.querySelector(`.team-${t.id.toLowerCase()}`).checked) activeTeams.push(t.name); });
+        config.teams.forEach(t => { if(g.querySelector(`.team-${t.id}`).checked) activeTeams.push(t.name); });
         g.querySelector('.title-text').innerText = `${nameInput || "내역"} (${amt}원)`;
         g.querySelector('.sub-text').innerHTML = `결제: ${payer.split('(')[0]} | 참여: ${activeTeams.join(', ')}`;
         saveToLocal();
@@ -238,7 +237,7 @@
         saveToLocal();
         const items = JSON.parse(localStorage.getItem('settlementData') || "[]");
         if (items.find(i => !i.payer || !i.amount || i.amount === "0")) return alert("결제 정보를 확인하세요.");
-        let total = 0, teamPaid = { A: 0, B: 0, C: 0 }, teamSpent = { A: 0, B: 0, C: 0 }, memberFlow = {}; 
+        let total = 0, teamPaid = { 1: 0, 2: 0, 3: 0 }, teamSpent = { 1: 0, 2: 0, 3: 0 }, memberFlow = {}; 
         config.teams.forEach(t => t.members.forEach(m => memberFlow[m] = { paid: 0, spent: 0, teamId: t.id }));
         let tableHtml = `<table class="report-table"><tr><th>항목</th><th>결제자</th><th>금액</th></tr>`;
         items.forEach((item, idx) => {
@@ -285,8 +284,7 @@
         document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;">${internalMsg || '<div style="font-size:0.75rem; color:#888;">내부 정산 내역 없음</div>'}`;
         document.getElementById('result').style.display = 'block';
         document.getElementById('actionButtons').style.display = 'block';
-        // 결과 확인 시 너무 끝까지 내려가지 않도록 여유 있게 스크롤
-        window.scrollTo({ top: document.body.scrollHeight - 100, behavior: 'smooth' });
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function saveAsImage() {
