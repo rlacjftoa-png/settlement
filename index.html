@@ -63,12 +63,12 @@
             <h3 style="color:white; margin-top:0; text-align:center; font-size:1.2rem;">📊 최종 정산 리포트</h3>
             <div id="reportHeader"></div>
             <div id="reportGuide"></div>
-            <div id="privateSection"></div>
+            <div id="privateSection" data-html2canvas-ignore="true"></div>
         </div>
     </div>
     
     <div id="actionButtons" style="display:none;">
-        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 저장/공유</button>
+        <button class="image-btn" onclick="saveAsImage()">🖼️ 리포트 이미지 생성</button>
     </div>
 </div>
 
@@ -234,49 +234,47 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    // APK 환경 최적화 저장/공유 함수
     async function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
+        const actionButtons = document.getElementById('actionButtons');
         
         try {
             const canvas = await html2canvas(captureArea, { 
                 backgroundColor: "#f2f4f7", 
                 scale: 2,
-                useCORS: true
+                useCORS: true,
+                // 이 옵션이 privateSection의 태그를 인식해 이미지에서 제외합니다.
+                ignoreElements: (el) => el.getAttribute('data-html2canvas-ignore') === 'true'
             });
 
             const imageData = canvas.toDataURL("image/png");
+
+            const existingTemp = document.querySelectorAll('.temp-save-area');
+            existingTemp.forEach(el => el.remove());
+
+            const guideBox = document.createElement('div');
+            guideBox.className = 'temp-save-area';
+            guideBox.innerHTML = `
+                <div style="background:#fff3cd; color:#856404; padding:12px; border-radius:12px; margin-top:20px; font-size:0.85rem; text-align:center; border:1px solid #ffeeba; line-height:1.5;">
+                    📍 <strong>저장 안내</strong> 📍<br>
+                    공통 정산 내역만 이미지로 생성되었습니다.<br>
+                    <strong>아래 이미지를 1초간 꾹~ 눌러서</strong><br>
+                    [이미지 다운로드]를 선택해 주세요!
+                </div>
+            `;
+            actionButtons.appendChild(guideBox);
+
+            const img = new Image();
+            img.className = 'temp-save-area';
+            img.src = imageData;
+            img.style.cssText = "width:100%; margin-top:12px; border-radius:16px; border:3px solid var(--primary); box-shadow: 0 6px 20px rgba(0,0,0,0.15);";
             
-            // APK 환경에서 파일 객체 생성
-            const response = await fetch(imageData);
-            const blob = await response.blob();
-            const file = new File([blob], `settlement_${new Date().getTime()}.png`, { type: 'image/png' });
+            actionButtons.appendChild(img);
+            img.scrollIntoView({ behavior: 'smooth' });
 
-            // 1. 공유 기능 시도 (안드로이드 시스템 팝업 호출)
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: '팀 정산 리포트',
-                });
-            } else {
-                // 2. 공유 기능 미지원 시 (WebView 설정에 따라 다름)
-                // 하단에 이미지를 띄워 사용자가 꾹 눌러 저장하게 함
-                alert("공유하기를 사용할 수 없습니다. 생성된 이미지를 '꾹 눌러서' 저장해 주세요.");
-                
-                const existingImg = document.getElementById('tempResultImg');
-                if (existingImg) existingImg.remove();
-
-                const img = new Image();
-                img.id = 'tempResultImg';
-                img.src = imageData;
-                img.style.cssText = "width:100%; margin-top:20px; border-radius:12px; border:2px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.2);";
-                
-                document.getElementById('actionButtons').appendChild(img);
-                img.scrollIntoView({ behavior: 'smooth' });
-            }
         } catch (e) {
             console.error(e);
-            alert("리포트 이미지 생성에 실패했습니다. 화면 캡처 기능을 이용해 주세요.");
+            alert("이미지 생성 실패. 화면 캡처를 이용해 주세요.");
         }
     }
 </script>
