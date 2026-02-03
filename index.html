@@ -6,48 +6,44 @@
     <title>팀 정산 어플 (Pro)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v20] Header Overlap Fix */
+        /* [Update: 2026-02-03-v21] Left Title & Right Settings Layout */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
         
-        /* [수정] 헤더 레이아웃 - 겹침 완벽 방지 */
+        /* [수정] 헤더 레이아웃: 양쪽 끝 정렬 (겹침 원천 차단) */
         .app-header { 
             display: flex; 
-            justify-content: space-between; /* 양 끝 배분 */
+            justify-content: space-between; /* 제목은 왼쪽, 버튼은 오른쪽 끝으로 */
             align-items: center; 
             margin-bottom: 15px; 
             padding: 10px 5px;
-            position: relative;
         }
         
-        /* [수정] 제목 스타일 */
+        /* [수정] 제목: 왼쪽 정렬 */
         .app-title { 
             font-size: 1.25rem; 
             color: #333; 
             font-weight: 800; 
             margin: 0;
-            /* 제목이 절대 중앙에 오도록 하기 위한 트릭: 좌우 여백 자동 */
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            z-index: 1; /* 버튼보다 아래에 깔리더라도 글자는 보이게 */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap; /* 줄바꿈 방지 */
         }
 
-        /* [수정] 설정 버튼 스타일 */
+        /* [수정] 설정 버튼: 오른쪽 정렬 (아이콘 형태 유지) */
         .setting-btn { 
-            /* 절대 위치 대신 Flex 아이템으로 배치하되, 우측 끝으로 밀어버림 */
-            margin-left: auto; /* 왼쪽 여백을 다 차지해서 우측으로 밀림 */
             background: transparent; 
             border: none; 
-            padding: 8px; 
+            padding: 8px; /* 터치 영역 */
             font-size: 1.4rem; 
             cursor: pointer; 
             color: #888; 
-            transition: color 0.2s;
-            z-index: 10; /* 제목보다 위에 오도록 */
-            display: block; /* 명시적 블록 */
+            transition: color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .setting-btn:active { color: #333; transform: scale(0.9); }
 
