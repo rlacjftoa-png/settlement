@@ -6,7 +6,7 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v4] Full Names with Dynamic One-line Layout */
+        /* [Update: 2026-02-03-v6] 2-Line Layout with "To Send" Label */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -29,24 +29,19 @@
         .calc-btn { background: var(--primary); color: white; }
         .image-btn { background: #6c5ce7; color: white; margin-top: 15px; }
 
-        /* 리포트 레이아웃 - 한 줄 정렬 강화 */
+        /* 리포트 레이아웃 최적화 */
         .result-box { background: var(--dark); color: #fff; padding: 20px; border-radius: 18px; display: none; margin-top: 15px; }
         .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.75rem; color: #ddd; }
         .report-table th { border-bottom: 1px solid #555; padding: 5px; text-align: left; }
         .report-table td { padding: 5px; border-bottom: 1px solid #444; }
         .highlight { color: #f39c12; font-weight: bold; }
         
-        /* 송금 가이드: 멤버 이름 포함 시 줄바꿈 방지 및 자동 크기 조절 느낌 */
-        .guide-line { 
-            font-size: 0.78rem; /* 전체 이름을 위해 기본 폰트 살짝 축소 */
-            margin-bottom: 10px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            white-space: nowrap; 
-            letter-spacing: -0.5px; /* 자간을 더 좁혀 공간 확보 */
-        }
-        .guide-line b { color: #f39c12; margin-left: 5px; font-size: 0.85rem; }
+        /* 송금 가이드 디자인 */
+        .guide-container { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #444; }
+        .guide-container:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .guide-team { font-size: 0.85rem; margin-bottom: 4px; display: block; color: #f39c12; font-weight: bold; }
+        .guide-detail { font-size: 0.8rem; color: #fff; display: flex; justify-content: flex-start; align-items: center; gap: 5px; }
+        .send-label { font-size: 0.7rem; color: #aaa; background: #444; padding: 2px 6px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -204,14 +199,20 @@
             diff.filter(c => c.v > 0).forEach(c => {
                 if(debt <= 0 || c.v <= 0) return;
                 let p = Math.min(debt, c.v);
-                // 멤버 이름을 포함하여 출력
-                msg += `<div class="guide-line"><span>💰 ${d.n} → ${c.n}</span> <b>${Math.round(p).toLocaleString()}원</b></div>`;
+                // 두 줄 레이아웃 적용
+                msg += `<div class="guide-container">
+                            <span class="guide-team">💰 ${d.n} → ${c.n}</span>
+                            <div class="guide-detail">
+                                <span class="send-label">보내야 할 돈</span>
+                                <span class="highlight">${Math.round(p).toLocaleString()}원</span>
+                            </div>
+                        </div>`;
                 debt -= p; c.v -= p;
             });
         });
 
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
-        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:12px; border-radius:12px;">${msg || "정산 완료"}</div>`;
+        document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
         const toSendC = (teamSpent.C/2) - indC.은혜;
         document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;"><div style="font-size:0.75rem; color:#888;">[C팀 내부 정산] ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>`;
         
