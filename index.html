@@ -6,7 +6,7 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v6] 2-Line Layout with "To Send" Label */
+        /* [Update: 2026-02-03-v7] Precision Logic Fix */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -185,11 +185,23 @@
             const amt = Number(item.amount.replace(/,/g,''));
             total += amt;
             tableHtml += `<tr><td>${item.name || (idx+1)+'차'}</td><td>${item.payer}</td><td>${amt.toLocaleString()}원</td></tr>`;
+            
+            // 1. 전체 송금을 위한 지불액 기록
             if(item.payer.includes('A팀')) teamPaid.A += amt;
             else if(item.payer.includes('B팀')) teamPaid.B += amt;
-            else { teamPaid.C += amt; if(item.payer === '지훈') indC.지훈 += amt; if(item.payer === '은혜') indC.은혜 += amt; }
+            else teamPaid.C += amt;
+
+            // 2. 각 팀 소비액 계산 및 C팀 내부 기여도(유효 지불액) 계산
             const active = Object.keys(item.teams).filter(k => item.teams[k]);
-            active.forEach(t => teamSpent[t] += (amt / active.length));
+            const perTeamCost = amt / active.length;
+            
+            active.forEach(t => teamSpent[t] += perTeamCost);
+
+            // [수정된 핵심 로직] C팀이 참여했을 때만, 'C팀의 몫'을 결제한 사람에게 내부 기여도 인정
+            if(item.teams.C) {
+                if(item.payer === '지훈') indC.지훈 += perTeamCost;
+                if(item.payer === '은혜') indC.은혜 += perTeamCost;
+            }
         });
 
         let diff = [{n:teamNames.A, v:teamPaid.A-teamSpent.A}, {n:teamNames.B, v:teamPaid.B-teamSpent.B}, {n:teamNames.C, v:teamPaid.C-teamSpent.C}];
@@ -199,7 +211,6 @@
             diff.filter(c => c.v > 0).forEach(c => {
                 if(debt <= 0 || c.v <= 0) return;
                 let p = Math.min(debt, c.v);
-                // 두 줄 레이아웃 적용
                 msg += `<div class="guide-container">
                             <span class="guide-team">💰 ${d.n} → ${c.n}</span>
                             <div class="guide-detail">
@@ -214,8 +225,9 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}<div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
         
-        // [수정된 부분] 소비액(teamSpent)이 아닌 결제액(teamPaid) 기준으로 50%를 맞춰 줌
-        const toSendC = (teamPaid.C/2) - indC.은혜; 
+        // [수정된 로직 적용] (C팀 총 소비액 / 2) - (은혜가 C팀 몫으로 기여한 금액)
+        // 양수면 은혜가 덜 낸 것이므로 지훈->은혜, 음수면 은혜가 더 낸 것이므로 은혜->지훈 (변수명 toSendC는 은혜가 보낼 돈 기준)
+        const toSendC = (teamSpent.C / 2) - indC.은혜; 
         
         document.getElementById('privateSection').innerHTML = `<hr style="border:0; border-top:1px dashed #555; margin:15px 0;"><div style="font-size:0.75rem; color:#888;">[C팀 내부 정산] ${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>`;
         
