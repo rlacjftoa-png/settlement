@@ -235,14 +235,39 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-    function saveAsImage() {
-        html2canvas(document.getElementById('captureArea'), { backgroundColor: "#f2f4f7", scale: 2 }).then(canvas => {
+function saveAsImage() {
+        const captureArea = document.getElementById('captureArea');
+        
+        html2canvas(captureArea, { 
+            backgroundColor: "#f2f4f7", 
+            scale: 2,
+            useCORS: true // 외부 이미지가 있을 경우 대비
+        }).then(canvas => {
+            const imageData = canvas.toDataURL("image/png");
+            
+            // 1. 모바일 환경에서 가장 확실한 방법: 새 탭에 이미지를 띄움
+            // 사용자가 이미지를 길게 눌러서 '이미지 저장'을 할 수 있게 유도합니다.
+            try {
+                const newWindow = window.open();
+                newWindow.document.write(`<img src="${imageData}" style="width:100%;">`);
+                newWindow.document.title = "정산 리포트 (이미지를 길게 눌러 저장하세요)";
+            } catch (e) {
+                // 새 창 차단 시 대안: 현재 페이지 하단에 이미지를 보여줌
+                alert("이미지가 생성되었습니다. 리포트 하단에 나타난 이미지를 길게 눌러 저장해주세요.");
+                const img = new Image();
+                img.src = imageData;
+                img.style.width = "100%";
+                img.style.marginTop = "20px";
+                img.style.borderRadius = "12px";
+                img.style.border = "2px solid #4a90e2";
+                document.getElementById('actionButtons').appendChild(img);
+            }
+            
+            // 2. PC 환경을 위한 기존 다운로드 방식 유지
             const link = document.createElement('a');
             link.download = `정산리포트_${new Date().toISOString().slice(0,10)}.png`;
-            link.href = canvas.toDataURL();
+            link.href = imageData;
             link.click();
         });
     }
-</script>
-</body>
-</html>
+
