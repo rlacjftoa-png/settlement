@@ -219,7 +219,6 @@
         document.getElementById('reportHeader').innerHTML = `<div style="font-size:0.8rem; color:#bbb; border-bottom:1px solid #555; padding-bottom:5px;">📍 지출 내역</div>${tableHtml}</table><div style="text-align:right; font-weight:bold; margin:10px 0; color:#f39c12;">총액: ${total.toLocaleString()}원</div>`;
         document.getElementById('reportGuide').innerHTML = `<div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 최종 송금 가이드</div><div style="background:#3d4446; padding:15px; border-radius:12px;">${msg || "정산 완료"}</div>`;
         
-        // [수정된 C팀 내부 정산 로직]
         const perPersonC = teamSpent.C / 2;
         const toSendC = perPersonC - indC.지훈;
 
@@ -235,39 +234,46 @@
         document.getElementById('actionButtons').style.display = 'block';
     }
 
-function saveAsImage() {
+    // 수정된 이미지 저장 로직: 모바일 호환성 강화
+    function saveAsImage() {
         const captureArea = document.getElementById('captureArea');
         
         html2canvas(captureArea, { 
             backgroundColor: "#f2f4f7", 
             scale: 2,
-            useCORS: true // 외부 이미지가 있을 경우 대비
+            useCORS: true
         }).then(canvas => {
             const imageData = canvas.toDataURL("image/png");
             
-            // 1. 모바일 환경에서 가장 확실한 방법: 새 탭에 이미지를 띄움
-            // 사용자가 이미지를 길게 눌러서 '이미지 저장'을 할 수 있게 유도합니다.
-            try {
-                const newWindow = window.open();
-                newWindow.document.write(`<img src="${imageData}" style="width:100%;">`);
-                newWindow.document.title = "정산 리포트 (이미지를 길게 눌러 저장하세요)";
-            } catch (e) {
-                // 새 창 차단 시 대안: 현재 페이지 하단에 이미지를 보여줌
-                alert("이미지가 생성되었습니다. 리포트 하단에 나타난 이미지를 길게 눌러 저장해주세요.");
-                const img = new Image();
-                img.src = imageData;
-                img.style.width = "100%";
-                img.style.marginTop = "20px";
-                img.style.borderRadius = "12px";
-                img.style.border = "2px solid #4a90e2";
-                document.getElementById('actionButtons').appendChild(img);
-            }
-            
-            // 2. PC 환경을 위한 기존 다운로드 방식 유지
+            // 기존 다운로드 시도 (PC 환경용)
             const link = document.createElement('a');
             link.download = `정산리포트_${new Date().toISOString().slice(0,10)}.png`;
             link.href = imageData;
             link.click();
+
+            // 모바일/인앱 브라우저를 위한 알림 및 하단 이미지 노출
+            alert("다운로드가 시작되지 않는 경우, 리포트 아래에 생성된 이미지를 '길게 눌러서' 저장해 주세요.");
+            
+            // 기존에 생성된 이미지가 있다면 제거
+            const existingImg = document.getElementById('tempResultImg');
+            if (existingImg) existingImg.remove();
+
+            // 이미지 요소 추가
+            const img = new Image();
+            img.id = 'tempResultImg';
+            img.src = imageData;
+            img.style.width = "100%";
+            img.style.marginTop = "20px";
+            img.style.borderRadius = "12px";
+            img.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
+            img.style.border = "2px solid var(--primary)";
+            
+            document.getElementById('actionButtons').appendChild(img);
+            
+            // 이미지로 자동 스크롤
+            img.scrollIntoView({ behavior: 'smooth' });
         });
     }
-
+</script>
+</body>
+</html>
