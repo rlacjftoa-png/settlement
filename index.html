@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>팀 정산 어플 (Final Fix)</title>
+    <title>팀 정산 어플 (Final V28)</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-04-v27] Logic Fix for Multiple Receivers in STEP 2 */
+        /* [Update: 2026-02-04-v28] Fixed Split Logic for External Funds */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; --gray-border: #dfe6e9; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -18,14 +18,7 @@
 
         .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 12px; }
         
-        #itemList {
-            max-height: 60vh;
-            overflow-y: auto;
-            padding-right: 4px;
-            margin-bottom: 15px;
-            scroll-behavior: smooth;
-            min-height: 100px;
-        }
+        #itemList { max-height: 60vh; overflow-y: auto; padding-right: 4px; margin-bottom: 15px; scroll-behavior: smooth; min-height: 100px; }
         #itemList::-webkit-scrollbar { width: 5px; }
         #itemList::-webkit-scrollbar-track { background: transparent; }
         #itemList::-webkit-scrollbar-thumb { background: #d1d8e0; border-radius: 10px; }
@@ -58,7 +51,6 @@
         .radio-item:has(input:checked), .check-item:has(input:checked) { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: bold; box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3); transform: scale(1.02); }
         .radio-item:has(input:checked)::before, .check-item:has(input:checked)::before { content: '✔'; margin-right: 4px; font-size: 0.85rem; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
-        
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
         .save-btn { background: var(--success); color: white; margin-top: 15px; padding: 12px; font-size: 0.9rem; }
         .add-btn { background: #495057; color: white; margin-bottom: 8px; }
@@ -384,15 +376,14 @@
             const colorClass = diff >= 0 ? 'text-green' : 'text-red';
             statusHtml += `<div class="status-row"><span>${m}</span><span class="${colorClass}">${diffText}</span></div>`;
 
-            if (diff < -1) givers.push({name: m, amount: Math.abs(diff)}); // 돈을 덜 낸 사람 (줘야 함)
-            else if (diff > 1) receivers.push({name: m, amount: diff}); // 돈을 더 낸 사람 (받아야 함)
+            if (diff < -1) givers.push({name: m, amount: Math.abs(diff)});
+            else if (diff > 1) receivers.push({name: m, amount: diff});
         });
 
         let step1Html = "";
         if (givers.length === 0 && receivers.length === 0) {
             step1Html = `<div style="font-size:0.85rem; color:#aaa;">주고받을 돈이 없습니다.</div>`;
         } else {
-            // Greedy Algorithm for Step 1
             givers.forEach(g => {
                 receivers.forEach(r => {
                     if (g.amount <= 0 || r.amount <= 0) return;
@@ -407,13 +398,13 @@
             });
         }
 
+        // [수정된 로직 적용]
         let step2Html = "";
         if (Math.abs(netFlowC) > 10) {
-            // [수정된 로직] 외부 자금(netFlowC)을 개인별 할당량에 따라 분배
             if (netFlowC > 0) {
-                // 외부에서 돈이 들어옴 -> 'receivers' (더 낸 사람들)에게 분배
+                // 외부 수금 (여러 명이 받을 수도 있음) -> receivers에게 배분
                 receivers.forEach(r => {
-                    if (r.amount > 10) { // 받을 돈이 남아있는 사람만
+                    if (r.amount > 10) {
                         let take = applyTruncate(r.amount);
                         step2Html += `<div class="settle-card keep">
                                         <span class="step-badge keep">STEP 2</span>
@@ -422,8 +413,7 @@
                     }
                 });
             } else {
-                // 외부로 돈을 보내야 함 -> 'givers' (덜 낸 사람들)에게서 징수
-                let totalToSend = Math.abs(netFlowC);
+                // 외부 송금 (여러 명이 내야 할 수도 있음) -> givers에게 징수
                 givers.forEach(g => {
                     if (g.amount > 10) {
                         let give = applyTruncate(g.amount);
