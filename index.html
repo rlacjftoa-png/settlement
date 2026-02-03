@@ -6,7 +6,7 @@
     <title>팀 정산 어플</title>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* [Update: 2026-02-03-v9] Negative Value Label Fix */
+        /* [Update: 2026-02-03-v10] Fix Logic Error in Option B Label */
         :root { --primary: #4a90e2; --bg: #f2f4f7; --card-bg: #ffffff; --danger: #ff4d4f; --success: #28a745; --dark: #2d3436; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); padding: 10px; margin: 0; color: #333; -webkit-tap-highlight-color: transparent; }
         .container { max-width: 450px; margin: 0 auto; padding-bottom: 30px; }
@@ -237,11 +237,17 @@
         // --- 내부 정산 (차액 계산) ---
         const toSendC = (teamSpent.C / 2) - indC.은혜; 
         
-        // --- [수정] 옵션 B 표시 로직 (마이너스 제거) ---
+        // --- 옵션 B 표시 로직 (마이너스 제거 & 문구 수정) ---
         const takeE = realPaid.은혜 - (teamSpent.C / 2);
         const takeJ = realPaid.지훈 - (teamSpent.C / 2);
+        
+        // [수정 핵심] C팀이 외부로부터 실제로 받는(혹은 줘야하는) 순수 차액 계산
+        // 공식: C팀이 낸 돈 - C팀이 쓴 돈
+        const netFlowC = teamPaid.C - teamSpent.C;
+        const flowText = netFlowC >= 0 
+            ? `외부에서 <span class="text-green">${Math.round(netFlowC).toLocaleString()}원</span> 받음` 
+            : `외부로 <span class="text-red">${Math.round(Math.abs(netFlowC)).toLocaleString()}원</span> 더 보냄`;
 
-        // 표시용 헬퍼 함수
         function getLabelAndValue(name, val) {
             if (val >= 0) {
                 return `<span>${name} 챙길 돈:</span> <span class="text-green">+${Math.round(val).toLocaleString()}원</span>`;
@@ -254,12 +260,12 @@
                            <div style="font-size:0.8rem; color:#bbb; margin-bottom:8px;">📍 C팀 내부 정산 (둘 중 하나만 선택)</div>`;
         
         privateHtml += `<div style="margin-bottom:15px;">
-                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 A) A/B팀에게 돈 받기 전, 둘끼리만 정산할 때</div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 A) 외부 송금 전, 둘끼리만 정산할 때</div>
                             <div style="font-size:0.85rem; color:#fff;">${toSendC > 0 ? '은혜 → 지훈' : '지훈 → 은혜'}: <span class="highlight">${Math.round(Math.abs(toSendC)).toLocaleString()}원</span></div>
                         </div>`;
 
         privateHtml += `<div>
-                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 B) A/B팀에게 받은 돈(${Math.round(teamSpent.A + teamSpent.B).toLocaleString()}원)을 나눌 때</div>
+                            <div style="font-size:0.75rem; color:#aaa; margin-bottom:4px;">옵션 B) 외부 정산(${flowText}) 포함 최종 분배</div>
                             <div style="background:#3d4446; padding:10px; border-radius:8px; font-size:0.85rem;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                                     ${getLabelAndValue('은혜', takeE)}
